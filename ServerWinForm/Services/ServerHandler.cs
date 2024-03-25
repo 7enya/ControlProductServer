@@ -9,14 +9,16 @@ using OpCode = ServerWinForm.Enums.OpCode;
 
 namespace ServerWinForm.Services
 {
-    public class ServerHandler
+    public static class ServerHandler
     {
         //public event EventHandler<string> onChanged;
-        Object _lockObject = new Object();
-        private TcpListener server;
-        public ObservableCollection<Device> connectedDevices = [];
-        public ObservableCollection<Proposal> proposalList = [];
-        public async Task InitializeServer()
+        private static Object _lockObject = new Object();
+        private static TcpListener server;
+        public static ObservableCollection<Device> connectedDevices { get; private set; } = new ObservableCollection<Device>();
+        public static ObservableCollection<Proposal> proposalList { get; private set; } = new ObservableCollection<Proposal>();
+
+
+        public static async Task InitializeServer()
         {
             var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
             //var ipAddress = IPAddress.Parse("127.0.0.1");
@@ -37,7 +39,7 @@ namespace ServerWinForm.Services
                 }
             }
         }
-        private async Task HandleIncomingConnection(TcpClient tcpClient)
+        private static async Task HandleIncomingConnection(TcpClient tcpClient)
         {
             Debug.WriteLine($"Подключение устройства с адресом {tcpClient.Client.RemoteEndPoint} ...");
             Device? device = null;
@@ -127,7 +129,7 @@ namespace ServerWinForm.Services
         }
 
 
-        private async Task<ClientProfile?> getUserProfileByAuthDataAsync(TcpClient client)
+        private static async Task<ClientProfile?> getUserProfileByAuthDataAsync(TcpClient client)
         {
             var streamReader = new StreamReader(client.GetStream());
             TimeSpan timeOut = TimeSpan.FromSeconds(10);
@@ -177,7 +179,7 @@ namespace ServerWinForm.Services
             return null;
         }
 
-        private IPAddress? GetIPv4Address(NetworkInterfaceType type)
+        private static IPAddress? GetIPv4Address(NetworkInterfaceType type)
         {
             foreach (NetworkInterface item in NetworkInterface.GetAllNetworkInterfaces())
             {

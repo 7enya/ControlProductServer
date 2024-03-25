@@ -9,8 +9,6 @@ namespace ServerWinForm
 {
     public partial class Form1 : Form
     {
-
-        ServerHandler serverHandler;
         public Form1()
         {
             InitializeComponent();
@@ -19,13 +17,12 @@ namespace ServerWinForm
 
         private void HandleBackgroundProcesses()
         {
-            serverHandler = new ServerHandler();
             //serverHandler.connectedDevices.CollectionChanged += ((sender, e) => {
             //    Control.BeginInvoke
             //});
-            serverHandler.connectedDevices.CollectionChanged += UpdateDeviceList;
-            serverHandler.proposalList.CollectionChanged += UpdateProposalList;
-            serverHandler.InitializeServer();
+            ServerHandler.connectedDevices.CollectionChanged += UpdateDeviceList;
+            ServerHandler.proposalList.CollectionChanged += UpdateProposalList;
+            ServerHandler.InitializeServer();
         }
 
         private void btnTest_Click(object sender, EventArgs e)
@@ -99,7 +96,7 @@ namespace ServerWinForm
             foreach (Proposal proposal in proposalList)
             {
                 ListViewItem item = new ListViewItem(proposal.Id.ToString());
-                item.SubItems.Add(proposal.DataTime.ToShortDateString());
+                item.SubItems.Add($"{proposal.DataTime.ToShortDateString()}, { proposal.DataTime.ToShortTimeString()}");
                 string status = "";
                 switch (proposal.Status)
                 {
@@ -114,7 +111,7 @@ namespace ServerWinForm
                             Device device;
                             lock (_lock)
                             {
-                                device = serverHandler.connectedDevices.First(item => item.AttachedProposal == proposal);
+                                device = ServerHandler.connectedDevices.First(item => item.AttachedProposal == proposal);
                             }
                             if (device != null)
                             {
@@ -156,6 +153,7 @@ namespace ServerWinForm
         private void lstProposals_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             Debug.WriteLine("Item double-clicked by mouse");
+            ShowProposalDetailsDialog();
         }
 
         private void lstProposals_KeyPress(object sender, KeyPressEventArgs e)
@@ -164,6 +162,23 @@ namespace ServerWinForm
             {
                 e.Handled = true;
                 Debug.WriteLine("Item cliked by Enter button");
+                ShowProposalDetailsDialog();
+            }
+        }
+
+        private void ShowProposalDetailsDialog()
+        {
+            ProposalDetailsForm proposalDetailsForm = new ProposalDetailsForm();
+            string propId = lstProposals.SelectedItems[0].Text;
+            var proposal = ServerHandler.proposalList.First(item => item.Id.Equals(propId));
+            Debug.WriteLine(proposal.ToString());
+            proposalDetailsForm.SelectedProposal = proposal;
+            proposalDetailsForm.ProposalStatus = lstProposals.SelectedItems[0].SubItems[1].Text;
+            var result = proposalDetailsForm.ShowDialog();
+
+            if (result == DialogResult.OK)
+            {
+
             }
         }
     }
