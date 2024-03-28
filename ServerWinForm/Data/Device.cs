@@ -23,21 +23,6 @@ namespace ServerWinForm.Data
             AttachedProposal = null;
         }
 
-        //public TcpClient GetConnection()
-        //{
-        //    return tcpClient;
-        //}
-
-        //public StreamReader GetReadStream()
-        //{
-        //    return streamReader;
-        //}
-
-        //public ClientProfile GetProfile()
-        //{
-        //    return clientProfile;
-        //}
-
         //public byte[]? GetMessage()
         //{
         //    byte[] message = new byte[256];

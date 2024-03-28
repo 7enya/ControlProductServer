@@ -31,12 +31,12 @@
             tabControl1 = new TabControl();
             tabRequests = new TabPage();
             btnRefreshAll = new Button();
-            lstProposals = new ListView();
+            lst_Proposals = new ListView();
             columnRequestId = new ColumnHeader();
             columnDataTime = new ColumnHeader();
             columnStatus = new ColumnHeader();
             tabPage2 = new TabPage();
-            lstConnections = new ListView();
+            lst_Connections = new ListView();
             colDeviceName = new ColumnHeader();
             colIpAddress = new ColumnHeader();
             colDeviceType = new ColumnHeader();
@@ -53,18 +53,18 @@
             tabControl1.Margin = new Padding(3, 2, 3, 2);
             tabControl1.Name = "tabControl1";
             tabControl1.SelectedIndex = 0;
-            tabControl1.Size = new Size(408, 401);
+            tabControl1.Size = new Size(612, 401);
             tabControl1.TabIndex = 0;
             // 
             // tabRequests
             // 
             tabRequests.Controls.Add(btnRefreshAll);
-            tabRequests.Controls.Add(lstProposals);
+            tabRequests.Controls.Add(lst_Proposals);
             tabRequests.Location = new Point(4, 24);
             tabRequests.Margin = new Padding(3, 2, 3, 2);
             tabRequests.Name = "tabRequests";
             tabRequests.Padding = new Padding(3, 2, 3, 2);
-            tabRequests.Size = new Size(400, 373);
+            tabRequests.Size = new Size(604, 373);
             tabRequests.TabIndex = 0;
             tabRequests.Text = "Заявки";
             tabRequests.UseVisualStyleBackColor = true;
@@ -79,87 +79,89 @@
             btnRefreshAll.UseVisualStyleBackColor = true;
             btnRefreshAll.Click += btnTest_Click;
             // 
-            // lstProposals
+            // lst_Proposals
             // 
-            lstProposals.Activation = ItemActivation.TwoClick;
-            lstProposals.Columns.AddRange(new ColumnHeader[] { columnRequestId, columnDataTime, columnStatus });
-            lstProposals.FullRowSelect = true;
-            lstProposals.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-            lstProposals.Location = new Point(0, 0);
-            lstProposals.Margin = new Padding(3, 2, 3, 2);
-            lstProposals.MultiSelect = false;
-            lstProposals.Name = "lstProposals";
-            lstProposals.Size = new Size(400, 308);
-            lstProposals.TabIndex = 0;
-            lstProposals.UseCompatibleStateImageBehavior = false;
-            lstProposals.View = View.Details;
-            lstProposals.KeyPress += lstProposals_KeyPress;
-            lstProposals.MouseDoubleClick += lstProposals_MouseDoubleClick;
+            lst_Proposals.Activation = ItemActivation.TwoClick;
+            lst_Proposals.Columns.AddRange(new ColumnHeader[] { columnRequestId, columnDataTime, columnStatus });
+            lst_Proposals.FullRowSelect = true;
+            lst_Proposals.HeaderStyle = ColumnHeaderStyle.Nonclickable;
+            lst_Proposals.Location = new Point(0, 0);
+            lst_Proposals.Margin = new Padding(3, 2, 3, 2);
+            lst_Proposals.MultiSelect = false;
+            lst_Proposals.Name = "lst_Proposals";
+            lst_Proposals.Size = new Size(604, 336);
+            lst_Proposals.TabIndex = 0;
+            lst_Proposals.UseCompatibleStateImageBehavior = false;
+            lst_Proposals.View = View.Details;
+            lst_Proposals.KeyPress += lst_Proposals_KeyPress;
+            lst_Proposals.MouseDoubleClick += lst_Proposals_MouseDoubleClick;
             // 
             // columnRequestId
             // 
             columnRequestId.Text = "Номер заявки";
-            columnRequestId.Width = 120;
+            columnRequestId.Width = 200;
             // 
             // columnDataTime
             // 
             columnDataTime.Text = "Время поступления";
-            columnDataTime.Width = 150;
+            columnDataTime.Width = 170;
             // 
             // columnStatus
             // 
             columnStatus.Text = "Статус";
-            columnStatus.Width = 120;
+            columnStatus.Width = 230;
             // 
             // tabPage2
             // 
-            tabPage2.Controls.Add(lstConnections);
+            tabPage2.Controls.Add(lst_Connections);
             tabPage2.Location = new Point(4, 24);
             tabPage2.Margin = new Padding(3, 2, 3, 2);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new Padding(3, 2, 3, 2);
-            tabPage2.Size = new Size(400, 373);
+            tabPage2.Size = new Size(604, 373);
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Подключения";
             tabPage2.UseVisualStyleBackColor = true;
             // 
-            // lstConnections
+            // lst_Connections
             // 
-            lstConnections.Columns.AddRange(new ColumnHeader[] { colDeviceName, colIpAddress, colDeviceType });
-            lstConnections.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-            lstConnections.Location = new Point(0, 0);
-            lstConnections.Margin = new Padding(3, 2, 3, 2);
-            lstConnections.MultiSelect = false;
-            lstConnections.Name = "lstConnections";
-            lstConnections.Size = new Size(400, 308);
-            lstConnections.TabIndex = 0;
-            lstConnections.UseCompatibleStateImageBehavior = false;
-            lstConnections.View = View.Details;
+            lst_Connections.Columns.AddRange(new ColumnHeader[] { colDeviceName, colIpAddress, colDeviceType });
+            lst_Connections.HeaderStyle = ColumnHeaderStyle.Nonclickable;
+            lst_Connections.Location = new Point(0, 0);
+            lst_Connections.Margin = new Padding(3, 2, 3, 2);
+            lst_Connections.MultiSelect = false;
+            lst_Connections.Name = "lst_Connections";
+            lst_Connections.Size = new Size(604, 373);
+            lst_Connections.TabIndex = 0;
+            lst_Connections.UseCompatibleStateImageBehavior = false;
+            lst_Connections.View = View.Details;
+            lst_Connections.MouseDoubleClick += lst_Connections_MouseDoubleClick;
             // 
             // colDeviceName
             // 
             colDeviceName.Text = "Устройство";
-            colDeviceName.Width = 170;
+            colDeviceName.Width = 250;
             // 
             // colIpAddress
             // 
             colIpAddress.Text = "IP-адрес";
-            colIpAddress.Width = 120;
+            colIpAddress.Width = 215;
             // 
             // colDeviceType
             // 
             colDeviceType.Text = "Тип";
-            colDeviceType.Width = 105;
+            colDeviceType.Width = 130;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(436, 443);
+            ClientSize = new Size(642, 443);
             Controls.Add(tabControl1);
             Margin = new Padding(3, 2, 3, 2);
             Name = "Form1";
             Text = "Form1";
+            FormClosing += Form1_FormClosing;
             tabControl1.ResumeLayout(false);
             tabRequests.ResumeLayout(false);
             tabPage2.ResumeLayout(false);
@@ -171,11 +173,11 @@
         private TabControl tabControl1;
         private TabPage tabRequests;
         private TabPage tabPage2;
-        private ListView lstProposals;
+        private ListView lst_Proposals;
         private ColumnHeader columnRequestId;
         private ColumnHeader columnDataTime;
         private ColumnHeader columnStatus;
-        private ListView lstConnections;
+        private ListView lst_Connections;
         private ColumnHeader colDeviceName;
         private ColumnHeader colIpAddress;
         private ColumnHeader colDeviceType;

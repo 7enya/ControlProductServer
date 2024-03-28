@@ -47,14 +47,14 @@ namespace ServerWinForm.Services
                     }
                 }
             }
-            foreach (var profile in profiles)
-            {
-                Debug.WriteLine($"deviceName = {profile.deviceName}");
-                Debug.WriteLine($"macAddress = {profile.deviceMacAddress}");
-                Debug.WriteLine($"deviceType = {profile.deviceType}");
-                Debug.WriteLine($"login = {profile.login}");
-                Debug.WriteLine($"password = {profile.password}");
-            }
+            //foreach (var profile in profiles)
+            //{
+            //    Debug.WriteLine($"deviceName = {profile.deviceName}");
+            //    Debug.WriteLine($"macAddress = {profile.deviceMacAddress}");
+            //    Debug.WriteLine($"deviceType = {profile.deviceType}");
+            //    Debug.WriteLine($"login = {profile.login}");
+            //    Debug.WriteLine($"password = {profile.password}");
+            //}
         }
 
         public List<ClientProfile> GetProfiles()

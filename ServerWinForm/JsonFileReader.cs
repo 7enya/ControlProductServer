@@ -9,7 +9,7 @@ namespace ServerWinForm
 {
     public static class JsonFileReader
     {
-        public static T ReadFile<T>(string filePath)
+        public static T? ReadFile<T>(string filePath)
         {
             string text = File.ReadAllText(filePath);
             return JsonSerializer.Deserialize<T>(text);

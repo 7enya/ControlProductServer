@@ -25,6 +25,16 @@ namespace ServerWinForm.Data
             this.password = password;
         }
 
+        public override bool Equals(object? obj)
+        {
+            return obj is ClientProfile profile &&
+                   deviceName == profile.deviceName &&
+                   deviceMacAddress == profile.deviceMacAddress &&
+                   EqualityComparer<DeviceType>.Default.Equals(deviceType, profile.deviceType) &&
+                   login == profile.login &&
+                   password == profile.password;
+        }
+
         //public string? GetDeviceName()
         //{
         //    return deviceName;

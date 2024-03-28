@@ -8,7 +8,7 @@ namespace ServerWinForm.Data
 {
     public class Product
     {
-        public string title;
-        public int count;
+        public string title { get; set; }
+        public int count { get; set; }
     }
 }

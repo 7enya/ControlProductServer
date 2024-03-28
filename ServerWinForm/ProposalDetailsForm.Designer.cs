@@ -28,9 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            ListViewItem listViewItem1 = new ListViewItem(new string[] { "Сметана 20л", "20" }, -1);
-            ListViewItem listViewItem2 = new ListViewItem(new string[] { "Йогурт 0,5", "10" }, -1);
-            listView1 = new ListView();
+            lst_Products = new ListView();
             productNameHeader = new ColumnHeader();
             productCountHeader = new ColumnHeader();
             label1 = new Label();
@@ -44,17 +42,16 @@
             ((System.ComponentModel.ISupportInitialize)im_UploadStatus).BeginInit();
             SuspendLayout();
             // 
-            // listView1
+            // lst_Products
             // 
-            listView1.Columns.AddRange(new ColumnHeader[] { productNameHeader, productCountHeader });
-            listView1.Items.AddRange(new ListViewItem[] { listViewItem1, listViewItem2 });
-            listView1.Location = new Point(12, 38);
-            listView1.MultiSelect = false;
-            listView1.Name = "listView1";
-            listView1.Size = new Size(345, 224);
-            listView1.TabIndex = 0;
-            listView1.UseCompatibleStateImageBehavior = false;
-            listView1.View = View.Details;
+            lst_Products.Columns.AddRange(new ColumnHeader[] { productNameHeader, productCountHeader });
+            lst_Products.Location = new Point(12, 38);
+            lst_Products.MultiSelect = false;
+            lst_Products.Name = "lst_Products";
+            lst_Products.Size = new Size(345, 224);
+            lst_Products.TabIndex = 0;
+            lst_Products.UseCompatibleStateImageBehavior = false;
+            lst_Products.View = View.Details;
             // 
             // productNameHeader
             // 
@@ -77,13 +74,12 @@
             // 
             // cb_SelectDevice
             // 
+            cb_SelectDevice.DropDownStyle = ComboBoxStyle.DropDownList;
             cb_SelectDevice.FormattingEnabled = true;
-            cb_SelectDevice.Items.AddRange(new object[] { "test1", "test2", "test3", "test4", "test5", "test6", "test7", "test8", "test9", "test10" });
             cb_SelectDevice.Location = new Point(217, 326);
             cb_SelectDevice.Name = "cb_SelectDevice";
             cb_SelectDevice.Size = new Size(140, 23);
             cb_SelectDevice.TabIndex = 2;
-            cb_SelectDevice.Text = "Выбрать устр-во";
             // 
             // label2
             // 
@@ -137,7 +133,7 @@
             im_UploadStatus.Image = Properties.Resources.gif_uploadProcess;
             im_UploadStatus.Location = new Point(161, 326);
             im_UploadStatus.Name = "im_UploadStatus";
-            im_UploadStatus.Size = new Size(41, 23);
+            im_UploadStatus.Size = new Size(41, 25);
             im_UploadStatus.SizeMode = PictureBoxSizeMode.CenterImage;
             im_UploadStatus.TabIndex = 9;
             im_UploadStatus.TabStop = false;
@@ -155,11 +151,12 @@
             Controls.Add(label2);
             Controls.Add(cb_SelectDevice);
             Controls.Add(label1);
-            Controls.Add(listView1);
+            Controls.Add(lst_Products);
             Controls.Add(btn_uploadProposal);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "ProposalDetailsForm";
             Text = "Заявка";
+            Load += ProposalDetailsForm_Load;
             ((System.ComponentModel.ISupportInitialize)im_UploadStatus).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -167,7 +164,7 @@
 
         #endregion
 
-        private ListView listView1;
+        private ListView lst_Products;
         private ColumnHeader productNameHeader;
         private ColumnHeader productCountHeader;
         private Label label1;
