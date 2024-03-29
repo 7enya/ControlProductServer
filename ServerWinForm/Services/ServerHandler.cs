@@ -1,4 +1,5 @@
 ﻿using ServerWinForm.Data;
+using ServerWinForm.Enums;
 using ServerWinForm.Extensions;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -9,7 +10,8 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
-using OpCode = ServerWinForm.Enums.OpCode;
+using System.Windows.Forms;
+using MessageCode = ServerWinForm.Enums.MessageCode;
 
 namespace ServerWinForm.Services
 {
@@ -143,7 +145,7 @@ namespace ServerWinForm.Services
             Debug.WriteLine($"OpCode = {inputMessage[0]}");
             string authData = Encoding.UTF8.GetString(inputMessage, 1, readBytes - 1);
             Debug.WriteLine($"Сообщение от {client.Client.RemoteEndPoint}: \"{authData}\"");
-            if (inputMessage[0] != (byte)OpCode.START_AUTH)
+            if (inputMessage[0] != (byte)MessageCode.START_AUTH)
                 return null;
 
             ClientProfile? userProfile = null;
@@ -219,6 +221,67 @@ namespace ServerWinForm.Services
             //    Console.WriteLine($"Name: {person?.Name}   Age: {person?.Age}");
             //}
         }
+
+
+        public static async Task<bool> AttachProposalTo(Device device, Proposal proposal)
+        {
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+            var jsonfile = JsonSerializer.Serialize(proposal, options);
+            var message = Encoding.UTF8.GetBytes(MessageCode.SEND_PROPOSAL + jsonfile);
+            try
+            {
+                var netStream = device.TcpClient.GetStream();
+                await netStream.WriteAsync(message, 0, message.Length);
+                await netStream.FlushAsync();
+                var response = new byte[1];
+
+                // создать сообщение
+
+                //var mes = Encoding.UTF8.GetBytes(BitConverter.GetBytes());
+
+
+                await netStream.ReadAsync(response, 0, response.Length);
+                if (response[0] == (byte) MessageCode.PROPOSAL_ACCEPTED)
+                {
+                    device.AttachedProposal = proposal;
+                    proposal.Status = ProposalStatus.IN_PROCESS;
+                    int index = proposalList.IndexOf(proposal);
+                    proposalList[index] = proposal;
+                    return true;
+                }
+                
+                else if (response[0] == (byte) MessageCode.PROPOSAL_REJECTED) return false;
+                return false;
+            }
+            catch (IOException) { return false; }
+            catch (SocketException) { return false; }
+
+            
+        }
+
+        private static async Task<byte[]?> ReadMessageFrom(Device device)
+        {
+            var messageCode = new byte[1];
+            var messageLengthBytes = new byte[4];
+            await device.TcpClient.GetStream().ReadAsync(messageCode, 0, messageCode.Length);
+            if (messageCode[0] != (byte)MessageCode.START_AUTH) return null;
+            var readBytes = 0;
+            while (readBytes != 4)
+            {
+                readBytes += await device.TcpClient.GetStream().ReadAsync(messageLengthBytes, readBytes, messageLengthBytes.Length);
+            }
+            var message = new byte[BitConverter.ToInt32(messageLengthBytes, 0)];
+            readBytes = 0;
+            while (readBytes != message.Length)
+            {
+                readBytes += await device.TcpClient.GetStream().ReadAsync(message, readBytes, message.Length);
+            }
+            return message;
+        }
+       
 
         private static IPAddress? GetIPv4Address(NetworkInterfaceType type)
         {

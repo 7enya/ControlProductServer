@@ -79,9 +79,21 @@ namespace ServerWinForm
             im_UploadStatus.Visible = true;
             im_UploadStatus.Image = Resources.gif_uploadProcess;
             await Task.Delay(3000);
-            im_UploadStatus.Image = Resources.im_uploadFinished;
-            txt_ProposalStatus.Text = "Обрабатывается";
-            cb_SelectDevice.Enabled = false;
+            var device = 
+                ServerHandler.connectedDevices.First(device => device.ClientProfile.deviceName?.Equals(SelectedDeviceName) ?? false);
+            var isAttached = await ServerHandler.AttachProposalTo(device, SelectedProposal);
+            if (isAttached)
+            {
+                im_UploadStatus.Image = Resources.im_uploadFinished;
+                txt_ProposalStatus.Text = "Обрабатывается";
+                cb_SelectDevice.Enabled = false;
+            }
+            else
+            {
+                btn_uploadProposal.Enabled = true;
+                btn_uploadProposal.Visible = true;
+                im_UploadStatus.Visible = false;
+            }
         }
 
         private void btn_ok_Click(object sender, EventArgs e)
