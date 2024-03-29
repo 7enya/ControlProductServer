@@ -143,7 +143,7 @@ namespace ServerWinForm.Services
             Debug.WriteLine($"OpCode = {inputMessage[0]}");
             string authData = Encoding.UTF8.GetString(inputMessage, 1, readBytes - 1);
             Debug.WriteLine($"Сообщение от {client.Client.RemoteEndPoint}: \"{authData}\"");
-            if (inputMessage[0] == 0 || inputMessage[0] != (byte)OpCode.START_AUTH)
+            if (inputMessage[0] != (byte)OpCode.START_AUTH)
                 return null;
 
             ClientProfile? userProfile = null;
@@ -167,10 +167,11 @@ namespace ServerWinForm.Services
                 );
             }
             bool profileIsBusy = connectedDevices.Any(device => device.ClientProfile.deviceName == userProfile?.deviceName);
-            Debug.WriteLine($"({client.Client.RemoteEndPoint}) profileIsBusy = {profileIsBusy}");
             if (profileIsBusy)
+            {
+                Debug.WriteLine($"({client.Client.RemoteEndPoint}) Профиль устройства \"{userProfile?.deviceName}\" занят другим пользователем");
                 return null;
-
+            }
             return userProfile;
         }
 

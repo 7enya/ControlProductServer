@@ -70,6 +70,10 @@ namespace ServerWinForm
 
         private async void btn_uploadProposal_Click(object sender, EventArgs e)
         {
+            SelectedDeviceName = (string?)cb_SelectDevice.SelectedItem;
+            Debug.WriteLine("Selected item = " + SelectedDeviceName);
+            if (string.IsNullOrEmpty(SelectedDeviceName))
+                return;
             btn_uploadProposal.Enabled = false;
             btn_uploadProposal.Visible = false;
             im_UploadStatus.Visible = true;
@@ -77,8 +81,6 @@ namespace ServerWinForm
             await Task.Delay(3000);
             im_UploadStatus.Image = Resources.im_uploadFinished;
             txt_ProposalStatus.Text = "Обрабатывается";
-            SelectedDeviceName = (string?)cb_SelectDevice.SelectedItem;
-            Debug.WriteLine("Selected item = " + SelectedDeviceName);
             cb_SelectDevice.Enabled = false;
         }
 
