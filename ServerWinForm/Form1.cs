@@ -26,7 +26,8 @@ namespace ServerWinForm
 
         private void btnTest_Click(object sender, EventArgs e)
         {
-
+            int res = BitConverter.ToInt32([0x0, 0x1B, 0xFF, 0xAB], 0);
+            Debug.WriteLine("res (bytes -> int) = " + res);
         }
 
         private void UpdateDeviceList(object? sender, NotifyCollectionChangedEventArgs e)
