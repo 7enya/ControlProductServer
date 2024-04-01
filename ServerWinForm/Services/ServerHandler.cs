@@ -4,6 +4,7 @@ using ServerWinForm.Extensions;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
@@ -16,9 +17,8 @@ namespace ServerWinForm.Services
 {
     public static class ServerHandler
     {
-        //public event EventHandler<string> onChanged;
         public static object _lockDeviceObject = new object();
-        private static object _lockAuthProcessObject = new object();
+        private static Semaphore authSem = new Semaphore(1, 1);
         private static TcpListener server;
         public static ObservableCollection<Device> connectedDevices { get; private set; } = new ObservableCollection<Device>();
         public static ObservableCollection<Proposal> proposalList { get; private set; } = new ObservableCollection<Proposal>();
@@ -51,42 +51,37 @@ namespace ServerWinForm.Services
             Device? device = null;
             try
             {
-                ClientProfile? userProfile;
-                lock (_lockAuthProcessObject)
+                authSem.WaitOne();
+                device = await getAuthorizedDeviceAsync(tcpClient);
+                if (device == null)
                 {
-                    userProfile = getUserProfileByAuthDataAsync(tcpClient).Result;
-                    if (userProfile == null)
-                    {
-                        Debug.WriteLine($"Устройство {tcpClient.Client.RemoteEndPoint} не прошло процесс авторизации, соединение прервано");
-                        tcpClient.Close();
-                        return;
-                    }
-                    Debug.WriteLine($"Устройство {userProfile.deviceName} ({tcpClient.Client.RemoteEndPoint}) подключено");
-                    device = new Device(tcpClient, userProfile);
-                    connectedDevices.Add(device);
+                    await tcpClient.GetStream().WriteMessageAsync(MessageCode.ACCESS_DENIED, null);
+                    Debug.WriteLine($"Устройство {tcpClient.Client.RemoteEndPoint} не прошло процесс авторизации, соединение прервано");
+                    tcpClient.Close();
+                    authSem.Release();
+                    return;
                 }
-                // приём сообщений от клиента
-                byte[] data = new byte[500];
-                int readBytes;
-                string message;
-                while (device.isConnected())
-                {
-                    readBytes = await tcpClient.GetStream().ReadAsync(data, 0, data.Length);
-                    if (readBytes == 0) continue;
-                    message = Encoding.UTF8.GetString(data, 1, readBytes - 1);
-                    Debug.WriteLine(
-                        $"({device.ClientProfile.deviceName}) сообщение: \"{message}\", длина: {message.Length}"
-                    );
+                Debug.WriteLine($"Устройство {device.ClientProfile.deviceName} ({tcpClient.Client.RemoteEndPoint}) подключено");
+                connectedDevices.Add(device);
+                authSem.Release();
+                await device.NetworkStream.WriteMessageAsync(MessageCode.ACCESS_GRANTED, null);
+                while (device.isConnected()) {
+                    await device.DoJobIfThereIs(); 
                 }
-                Debug.WriteLine($"Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
+                Debug.WriteLine($"(GOOD) Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
             }
             catch (IOException)
             {
-                Debug.WriteLine($"Устройство с адресом {tcpClient.Client.RemoteEndPoint} прекратило соединение");
+                Debug.WriteLine($"(BAD) Потеряно соединение с устройством {tcpClient.Client.RemoteEndPoint}");
             }
+
             catch (SocketException)
             {
-                Debug.WriteLine($"Устройство с адресом {tcpClient.Client.RemoteEndPoint} отключено");
+                Debug.WriteLine($"(BAD) Устройство с адресом {tcpClient.Client.RemoteEndPoint} отключено");
+            }
+            catch (FormatException)
+            {
+                Debug.WriteLine($"({tcpClient.Client.RemoteEndPoint}) Получено сообщение с неверным форматом данных");
             }
             finally
             {
@@ -97,57 +92,34 @@ namespace ServerWinForm.Services
                     {
                         Debug.WriteLine($"Отвязка заявки от устройства {device.ClientProfile.deviceName}");
                         var proposal = proposalList.First(proposal => proposal == device.AttachedProposal);
-                        proposal.Status = Enums.ProposalStatus.UNPROCESSED;
+                        proposal.Status = ProposalStatus.UNPROCESSED;
                         int index = proposalList.IndexOf(proposal);
                         proposalList[index] = proposal;
                     }
                     Debug.WriteLine($"Удалено устройство {device.ClientProfile.deviceName} из списка (Size: {connectedDevices.Count})");
                 }
             }
-            //catch (AggregateException taskExc)
-            //{
-            //    foreach (var ex in taskExc.InnerExceptions)
-            //    {
-            //        if (ex is SocketException)
-            //        {
-
-            //        }
-            //        if (ex is IOException)
-            //        {
-
-            //        }
-            //    }
-            //}
-            //catch (TaskCanceledException) { }
         }
 
 
-        private static async Task<ClientProfile?> getUserProfileByAuthDataAsync(TcpClient client)
+        private static async Task<Device?> getAuthorizedDeviceAsync(TcpClient tcpClient)
         {
-            Debug.WriteLine($"Начат процесс авторизации устройства {client.Client.RemoteEndPoint}");
-            var streamReader = new StreamReader(client.GetStream());
+            Debug.WriteLine($"Начат процесс авторизации устройства {tcpClient.Client.RemoteEndPoint}");
             TimeSpan timeOut = TimeSpan.FromSeconds(10);
             var timeoutTask = Task.Delay(timeOut);
-            byte[] inputMessage = new byte[500];
-            var readMessageTask = client.GetStream().ReadAsync(inputMessage, 0, inputMessage.Length);
-            var completedTask = await Task.WhenAny(timeoutTask, readMessageTask);
+            var readCodeTask = tcpClient.GetStream().ReadCodeAsync();
+            var completedTask = await Task.WhenAny(timeoutTask, readCodeTask);
             if (completedTask == timeoutTask)
             {
-                Debug.WriteLine($"(Клиент: {client.Client.RemoteEndPoint}) Превышено время ожидания ({timeOut.Seconds} сек.)");
+                Debug.WriteLine($"(Сервер <- {tcpClient.Client.RemoteEndPoint}) Превышено время ожидания ({timeOut.Seconds} сек.)");
                 return null;
             }
-            //int end = Array.IndexOf(inputMessage, (byte)0);
-            int readBytes = readMessageTask.Result;
-            if (readBytes == 0)
+            var messageCode = readCodeTask.Result;
+            if (messageCode != MessageCode.START_AUTH && messageCode != MessageCode.RECONNECTION)
                 return null;
-
-            Debug.WriteLine($"OpCode = {inputMessage[0]}");
-            string authData = Encoding.UTF8.GetString(inputMessage, 1, readBytes - 1);
-            Debug.WriteLine($"Сообщение от {client.Client.RemoteEndPoint}: \"{authData}\"");
-            if (inputMessage[0] != (byte)MessageCode.START_AUTH)
-                return null;
-
+            string authData = Encoding.UTF8.GetString(await tcpClient.GetStream().ReadMessageAsync());
             ClientProfile? userProfile = null;
+            Guid proposalId = Guid.Empty;
             if (authData.Contains("login=", StringComparison.InvariantCultureIgnoreCase) &&
                 authData.Contains("password=", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -157,6 +129,11 @@ namespace ServerWinForm.Services
                 userProfile = config.GetProfiles().Find(
                     (elem) => (elem.login?.Equals(splitedMes[1]) ?? false) && (elem.password?.Equals(splitedMes[3]) ?? false)
                 );
+                // login=klhjkh=password=165484=propId=465421654564
+                if (messageCode == MessageCode.RECONNECTION)
+                {
+                    Guid.TryParse(splitedMes[5], out proposalId);
+                }
             }
             else if (authData.Contains("macAddress=", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -166,14 +143,31 @@ namespace ServerWinForm.Services
                 userProfile = config.GetProfiles().Find(
                     (elem) => elem.deviceMacAddress?.Equals(splitedMes[1]) ?? false
                 );
+                // macAddr=2F-19-15-24=propId=465421654564
+                if (messageCode == MessageCode.RECONNECTION)
+                {
+                    Guid.TryParse(splitedMes[3], out proposalId);
+                }
             }
-            bool profileIsBusy = connectedDevices.Any(device => device.ClientProfile.deviceName == userProfile?.deviceName);
+            if (userProfile == null) return null;
+            bool profileIsBusy = connectedDevices.Any(device => userProfile?.deviceName == device.ClientProfile.deviceName);
             if (profileIsBusy)
             {
-                Debug.WriteLine($"({client.Client.RemoteEndPoint}) Профиль устройства \"{userProfile?.deviceName}\" занят другим пользователем");
+                Debug.WriteLine($"({tcpClient.Client.RemoteEndPoint}) Профиль устройства \"{userProfile?.deviceName}\" занят другим пользователем");
                 return null;
             }
-            return userProfile;
+            var device = new Device(tcpClient, userProfile);
+            if (proposalId != Guid.Empty)
+            {
+                var proposal = proposalList.FirstOrDefault(prop => prop!.Id == proposalId, null);
+                if (proposal != null) 
+                {
+                    device.AttachedProposal = proposal;
+                    device.job = StartWaitingForResultoOfProposalProcessing;
+                    proposalList.Insert(proposalList.IndexOf(proposal), proposal);
+                }
+            }
+            return device;
         }
 
         private static async Task StartListenForServerProposals()
@@ -222,52 +216,63 @@ namespace ServerWinForm.Services
         }
 
 
-        //public static async Task<bool> AttachProposalTo(Device device, Proposal proposal)
-        //{
-        //    var options = new JsonSerializerOptions
-        //    {
-        //        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-        //    };
-        //    var jsonfile = JsonSerializer.Serialize(proposal, options);
-        //    var message = Encoding.UTF8.GetBytes(MessageCode.SEND_PROPOSAL + jsonfile);
-        //    try
-        //    {
-        //        var isSent = await WriteDataToDeviceAsync(device, MessageCode.SEND_PROPOSAL, jsonfile);
-        //        if (!isSent)
-        //        {
-        //            Debug.WriteLine($"(Server -> Client: {device.TcpClient.Client.RemoteEndPoint}) Не удалось отправить сообщение. Размер сообщения не должен превышать 4,29 GB");
-        //            return false;
-        //        }
-        //        ReadDataFromDeviceAsync(device);
+        public static async Task<bool> AttachProposalTo(Device device, Proposal proposal)
+        {
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+            var jsonfile = JsonSerializer.Serialize(proposal, options);
+            try
+            {
+                Debug.WriteLine($"(Server -> {device.TcpClient.Client.RemoteEndPoint}) Началась отправка заявки");
+                var isSent = await device.NetworkStream.WriteMessageAsync(MessageCode.SEND_PROPOSAL, jsonfile);
+                Debug.WriteLine($"(Server -> {device.TcpClient.Client.RemoteEndPoint}) Заявка отправлена");
+                var responseCode = await device.NetworkStream.ReadCodeAsync();
+                if (responseCode == MessageCode.PROPOSAL_ACCEPTED)
+                {
+                    device.AttachedProposal = proposal;
+                    proposal.Status = ProposalStatus.IN_PROCESS;
+                    int index = proposalList.IndexOf(proposal);
+                    proposalList[index] = proposal;
+                    device.job = StartWaitingForResultoOfProposalProcessing;
+                    return true;
+                }
+                else return false;
+            }
+            catch (IOException) { return false; }
+            catch (SocketException) { return false; }
+        }
 
-        //        // создать сообщение
+        private static async Task StartWaitingForResultoOfProposalProcessing(Device device)
+        {
+            switch(await device.NetworkStream.ReadCodeAsync())
+            {
+                case MessageCode.JOB_DONE:
+                    {
+                        // Отправить результат на сервер 1С
+                        // Отправить в базу данных json-файл с отмеченными продуктами
 
-        //        //var mes = Encoding.UTF8.GetBytes(BitConverter.GetBytes());
+                        var proposal = device.AttachedProposal;
+                        device.AttachedProposal = null;
+                        proposal!.Status = ProposalStatus.PROCESSED;
+                        var index = proposalList.IndexOf(proposal);
+                        proposalList[index] = proposal;
 
+                        break;
+                    }
+                case MessageCode.PROPOSAL_REJECTED:
+                    {
+                        var proposal = device.AttachedProposal;
+                        device.AttachedProposal = null;
+                        proposal!.Status = ProposalStatus.UNPROCESSED;
+                        var index = proposalList.IndexOf(proposal);
+                        proposalList[index] = proposal;
 
-        //        await netStream.ReadAsync(response, 0, response.Length);
-        //        if (response[0] == (byte)MessageCode.PROPOSAL_ACCEPTED)
-        //        {
-        //            device.AttachedProposal = proposal;
-        //            proposal.Status = ProposalStatus.IN_PROCESS;
-        //            int index = proposalList.IndexOf(proposal);
-        //            proposalList[index] = proposal;
-        //            return true;
-        //        }
-
-        //        else if (response[0] == (byte)MessageCode.PROPOSAL_REJECTED) return false;
-        //        return false;
-        //    }
-        //    catch (IOException) { return false; }
-        //    catch (SocketException) { return false; }
-
-
-        //}
-
-
-        
-
-       
+                        break;
+                    }
+            }
+        }
 
 
         private static IPAddress? GetIPv4Address(NetworkInterfaceType type)

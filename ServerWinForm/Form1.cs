@@ -1,8 +1,14 @@
 ﻿using ServerWinForm.Data;
 using ServerWinForm.Enums;
+using ServerWinForm.Extensions;
 using ServerWinForm.Services;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Sockets;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace ServerWinForm
 {
@@ -24,10 +30,25 @@ namespace ServerWinForm
             ServerHandler.InitializeServer();
         }
 
-        private void btnTest_Click(object sender, EventArgs e)
+        private async void btnTest_Click(object sender, EventArgs e)
         {
-            int res = BitConverter.ToInt32([0x0, 0x1B, 0xFF, 0xAB], 0);
-            Debug.WriteLine("res (bytes -> int) = " + res);
+            Debug.WriteLine("TEST HERE");
+            var options = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+            var json = JsonSerializer.Serialize(ServerHandler.proposalList, options);
+            var device = ServerHandler.connectedDevices.First();
+            try
+            {
+                await device.NetworkStream.WriteMessageAsync(MessageCode.SEND_PROPOSAL, json);
+                var code = await device.NetworkStream.ReadCodeAsync();
+                if (code == MessageCode.PROPOSAL_ACCEPTED) { Debug.WriteLine($"({device.TcpClient.Client.RemoteEndPoint} -> Server) Заявка принята"); }
+                else Debug.WriteLine($"({device.TcpClient.Client.RemoteEndPoint} -> Server) Заявка отклонена");
+            }
+            catch (IOException) { Debug.WriteLine($"Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение"); }
+            catch (SocketException) { Debug.WriteLine($"Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение"); }
+            finally { }
         }
 
         private void UpdateDeviceList(object? sender, NotifyCollectionChangedEventArgs e)
@@ -187,20 +208,6 @@ namespace ServerWinForm
             var proposal = ServerHandler.proposalList.First(item => item.Id.Equals(Guid.Parse(propId)));
             proposalDetailsForm.SelectedProposal = proposal;
             var result = proposalDetailsForm.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                lock (ServerHandler._lockDeviceObject)
-                {
-                    ServerHandler.connectedDevices
-                        .First(
-                            device => device.ClientProfile.deviceName?.Equals(proposalDetailsForm.SelectedDeviceName) ?? false
-                         )
-                        .AttachedProposal = proposalDetailsForm.SelectedProposal;
-                }
-                proposal.Status = ProposalStatus.IN_PROCESS;
-                int index = ServerHandler.proposalList.IndexOf(proposal);
-                ServerHandler.proposalList[index] = proposal;
-            }
         }
 
         private void lst_Proposals_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -222,7 +229,7 @@ namespace ServerWinForm
         private void lst_Connections_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             var device = lst_Connections.SelectedItems[0].Text;
-            var prop = ServerHandler.connectedDevices.First(item => item.ClientProfile.deviceName?.Equals(device) ?? false).AttachedProposal;
+            var prop = ServerHandler.connectedDevices.First(item => item.ClientProfile.deviceName.Equals(device)).AttachedProposal;
             Debug.WriteLine($"Attached prop = {prop} ({prop?.Id})");
         }
 

@@ -35,6 +35,7 @@ namespace ServerWinForm.Services
                     if (counter == COUNT_DEVICE_PARAMS)
                     {
                         counter = 0;
+                        if (string.IsNullOrEmpty(deviceName?.Trim())) continue;
                         profiles.Add(
                             new ClientProfile(
                                 deviceName,

@@ -1,4 +1,5 @@
 ﻿using ServerWinForm.Data;
+using ServerWinForm.Enums;
 using ServerWinForm.Properties;
 using ServerWinForm.Services;
 using System.Data;
@@ -33,7 +34,7 @@ namespace ServerWinForm
                         cb_SelectDevice.Items.AddRange(
                             ServerHandler.connectedDevices
                             .Where(device => device.AttachedProposal == null && device.ClientProfile.deviceName != null)
-                            .Select(device => device.ClientProfile.deviceName!)
+                            .Select(device => device.ClientProfile.deviceName)
                             .ToArray()
                         );
                         break;
@@ -44,7 +45,7 @@ namespace ServerWinForm
                         cb_SelectDevice.Items.Add(
                             ServerHandler.connectedDevices
                             .First(device => device.AttachedProposal == SelectedProposal)
-                            .ClientProfile.deviceName!
+                            .ClientProfile.deviceName
                         );
                         break;
                     }
@@ -67,7 +68,6 @@ namespace ServerWinForm
             lst_Products.Items.AddRange(items.ToArray());
             if (cb_SelectDevice.Items.Count != 0) cb_SelectDevice.SelectedIndex = 0;
         }
-
         private async void btn_uploadProposal_Click(object sender, EventArgs e)
         {
             SelectedDeviceName = (string?)cb_SelectDevice.SelectedItem;
@@ -79,8 +79,8 @@ namespace ServerWinForm
             im_UploadStatus.Visible = true;
             im_UploadStatus.Image = Resources.gif_uploadProcess;
             await Task.Delay(3000);
-            var device = 
-                ServerHandler.connectedDevices.First(device => device.ClientProfile.deviceName?.Equals(SelectedDeviceName) ?? false);
+            var device =
+                ServerHandler.connectedDevices.First(device => device.ClientProfile.deviceName.Equals(SelectedDeviceName));
             var isAttached = await ServerHandler.AttachProposalTo(device, SelectedProposal);
             if (isAttached)
             {
@@ -98,12 +98,6 @@ namespace ServerWinForm
 
         private void btn_ok_Click(object sender, EventArgs e)
         {
-            if (SelectedDeviceName != null)
-            {
-                DialogResult = DialogResult.OK;
-            }
-            else DialogResult = DialogResult.Cancel;
-            Debug.WriteLine($"Dialog Status = {DialogResult}");
             Close();
         }
 
