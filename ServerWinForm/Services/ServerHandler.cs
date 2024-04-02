@@ -231,6 +231,7 @@ namespace ServerWinForm.Services
                 var responseCode = await device.NetworkStream.ReadCodeAsync();
                 if (responseCode == MessageCode.PROPOSAL_ACCEPTED)
                 {
+                    await device.NetworkStream.ClearStreamAsync();
                     device.AttachedProposal = proposal;
                     proposal.Status = ProposalStatus.IN_PROCESS;
                     int index = proposalList.IndexOf(proposal);
@@ -238,7 +239,11 @@ namespace ServerWinForm.Services
                     device.job = StartWaitingForResultoOfProposalProcessing;
                     return true;
                 }
-                else return false;
+                else
+                {
+                    await device.NetworkStream.ClearStreamAsync();
+                    return false;
+                }
             }
             catch (IOException) { return false; }
             catch (SocketException) { return false; }
@@ -272,6 +277,7 @@ namespace ServerWinForm.Services
                         break;
                     }
             }
+            await device.NetworkStream.ClearStreamAsync();
         }
 
 

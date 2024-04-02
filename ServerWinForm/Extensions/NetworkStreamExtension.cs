@@ -78,7 +78,10 @@ namespace ServerWinForm.Extensions
             return (MessageCode) messageCode[0];
         }
 
-
-
+        public static async Task ClearStreamAsync(this NetworkStream stream)
+        {
+            byte[] buffer = new byte[100];
+            while ((await stream.ReadAsync(buffer, 0, buffer.Length)) != 0);
+        }
     }
 }
