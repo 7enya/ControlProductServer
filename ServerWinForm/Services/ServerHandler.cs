@@ -137,13 +137,13 @@ namespace ServerWinForm.Services
             }
             else if (authData.Contains("macAddress=", StringComparison.InvariantCultureIgnoreCase))
             {
-                // macAddr=2F-19-15-24
+                // macAddress=2F-19-15-24
                 var splitedMes = authData.Trim().Split('=');
                 var config = new ConfigService();
                 userProfile = config.GetProfiles().Find(
                     (elem) => elem.deviceMacAddress?.Equals(splitedMes[1]) ?? false
                 );
-                // macAddr=2F-19-15-24=propId=465421654564
+                // macAddress=2F-19-15-24=propId=465421654564
                 if (messageCode == MessageCode.RECONNECTION)
                 {
                     Guid.TryParse(splitedMes[3], out proposalId);

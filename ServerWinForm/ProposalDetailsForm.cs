@@ -78,7 +78,7 @@ namespace ServerWinForm
             btn_uploadProposal.Visible = false;
             im_UploadStatus.Visible = true;
             im_UploadStatus.Image = Resources.gif_uploadProcess;
-            await Task.Delay(3000);
+            //await Task.Delay(3000);
             var device =
                 ServerHandler.connectedDevices.First(device => device.ClientProfile.deviceName.Equals(SelectedDeviceName));
             var isAttached = await ServerHandler.AttachProposalTo(device, SelectedProposal);
