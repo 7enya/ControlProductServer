@@ -11,12 +11,13 @@ namespace ServerWinForm.Data
     public class Device
     {
         public delegate Task Job(Device device);
+        public Job? job { private get; set; }
 
         public TcpClient TcpClient { get; set; }
         public ClientProfile ClientProfile { get; private set; }
         public NetworkStream NetworkStream { get; set; }
         public Proposal? AttachedProposal { get; set; }
-        public Job? job { private get; set; }
+       
 
         public Device(TcpClient client, ClientProfile profile)
         {
@@ -26,14 +27,6 @@ namespace ServerWinForm.Data
             AttachedProposal = null;
         }
 
-        //public byte[]? GetMessage()
-        //{
-        //    byte[] message = new byte[256];
-        //    int readBytes = networkStream.Read(message, 0, message.Length);
-        //    if (readBytes == 0) return null;
-        //    return message;
-        //    tcpClient.Client.R
-        //}
 
         public bool isConnected()
         {
