@@ -63,7 +63,7 @@ namespace ServerWinForm
                             ListViewItem item = new ListViewItem(device.ClientProfile.deviceName);
                             item.SubItems.Add(device.TcpClient.Client.RemoteEndPoint?.ToString());
                             var deviceType = device.ClientProfile.deviceType.Value;
-                            if (deviceType == DeviceType.SCANNER.Value) { item.SubItems.Add("Сканер"); }
+                            if (deviceType == DeviceType.SCANNER.Value) { item.SubItems.Add("ТСД"); }
                             else if (deviceType == DeviceType.SMART_PHONE.Value) { item.SubItems.Add("Телефон"); }
                             else item.SubItems.Add("Не определено");
                             itemList.Add(item);
@@ -111,9 +111,8 @@ namespace ServerWinForm
                                     }
                                 case ProposalStatus.IN_PROCESS:
                                     {
-                                        var _lock = new Object();
                                         Device device;
-                                        lock (_lock)
+                                        lock (ServerHandler._lockDeviceObject)
                                         {
                                             device = ServerHandler.connectedDevices.First(item => item.AttachedProposal == proposal);
                                         }
@@ -168,9 +167,8 @@ namespace ServerWinForm
                                 }
                             case ProposalStatus.IN_PROCESS:
                                 {
-                                    var _lock = new Object();
                                     Device device;
-                                    lock (_lock)
+                                    lock (ServerHandler._lockDeviceObject)
                                     {
                                         device = ServerHandler.connectedDevices.First(item => item.AttachedProposal == e.OldItems[0] as Proposal);
                                     }
@@ -205,7 +203,7 @@ namespace ServerWinForm
         {
             ProposalDetailsForm proposalDetailsForm = new ProposalDetailsForm();
             string propId = lst_Proposals.SelectedItems[0].Text;
-            var proposal = ServerHandler.proposalList.First(item => item.Id.Equals(Guid.Parse(propId)));
+            var proposal = ServerHandler.proposalList.First(item => item.Id == propId);
             proposalDetailsForm.SelectedProposal = proposal;
             var result = proposalDetailsForm.ShowDialog();
         }
@@ -235,7 +233,6 @@ namespace ServerWinForm
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            ServerHandler.SaveData();
         }
     }
 }

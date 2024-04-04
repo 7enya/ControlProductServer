@@ -19,7 +19,7 @@ namespace ServerWinForm
 
         private void ProposalDetailsForm_Load(object sender, EventArgs e)
         {
-            if (SelectedProposal.Status == Enums.ProposalStatus.UNPROCESSED)
+            if (SelectedProposal.Status == ProposalStatus.UNPROCESSED)
             {
                 btn_uploadProposal.Visible = true;
                 btn_uploadProposal.Enabled = true;
@@ -28,7 +28,7 @@ namespace ServerWinForm
             else cb_SelectDevice.Enabled = false;
             switch (SelectedProposal.Status)
             {
-                case Enums.ProposalStatus.UNPROCESSED:
+                case ProposalStatus.UNPROCESSED:
                     {
                         txt_ProposalStatus.Text = "Не обработано";
                         cb_SelectDevice.Items.AddRange(
@@ -39,7 +39,7 @@ namespace ServerWinForm
                         );
                         break;
                     }
-                case Enums.ProposalStatus.IN_PROCESS:
+                case ProposalStatus.IN_PROCESS:
                     {
                         txt_ProposalStatus.Text = "Обрабатывается";
                         cb_SelectDevice.Items.Add(
@@ -49,7 +49,7 @@ namespace ServerWinForm
                         );
                         break;
                     }
-                case Enums.ProposalStatus.PROCESSED:
+                case ProposalStatus.PROCESSED:
                     {
                         txt_ProposalStatus.Text = "Выполнено";
                         break;
@@ -63,6 +63,7 @@ namespace ServerWinForm
                 if (product == null) return;
                 var item = new ListViewItem(product.title);
                 item.SubItems.Add(product.count.ToString());
+                item.SubItems.Add(product.gtin);
                 items.Add(item);
             });
             lst_Products.Items.AddRange(items.ToArray());

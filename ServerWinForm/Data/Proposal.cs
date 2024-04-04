@@ -10,27 +10,35 @@ namespace ServerWinForm.Data
 {
     public class Proposal
     {
+        [JsonPropertyName("id")]
         public string Id { get; private set; }
+
+        [JsonIgnore]
         public DateTime DateTime { get; private set; }
+
+        [JsonPropertyName("products")]
         public List<Product> Products { get; private set; }
+
+        [JsonIgnore]
         public ProposalStatus Status { get; set; }
 
-        public Proposal(string proposalId, List<Product> products)
+        [JsonConstructor]
+        public Proposal(string id, List<Product> products)
         {
-            Id = proposalId;
+            Id = id;
             DateTime = DateTime.Now;
             Products = products;
             Status = ProposalStatus.UNPROCESSED;
         }
 
-        [JsonConstructor]
-        public Proposal(string Id, DateTime DateTime, List<Product> Products, ProposalStatus Status)
-        {
-            this.Id = Id;
-            this.DateTime = DateTime;
-            this.Products = Products;
-            this.Status = Status;
-        }
+        //[JsonConstructor]
+        //public Proposal(string id, DateTime DateTime, List<Product> Products)
+        //{
+        //    this.Id = Id;
+        //    this.DateTime = DateTime;
+        //    this.Products = Products;
+        //    this.Status = Status;
+        //}
 
     }
 }

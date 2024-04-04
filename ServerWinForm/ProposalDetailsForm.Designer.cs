@@ -39,16 +39,17 @@
             txt_ProposalStatus = new Label();
             btn_uploadProposal = new Button();
             im_UploadStatus = new PictureBox();
+            productGtinHeader = new ColumnHeader();
             ((System.ComponentModel.ISupportInitialize)im_UploadStatus).BeginInit();
             SuspendLayout();
             // 
             // lst_Products
             // 
-            lst_Products.Columns.AddRange(new ColumnHeader[] { productNameHeader, productCountHeader });
+            lst_Products.Columns.AddRange(new ColumnHeader[] { productNameHeader, productCountHeader, productGtinHeader });
             lst_Products.Location = new Point(12, 38);
             lst_Products.MultiSelect = false;
             lst_Products.Name = "lst_Products";
-            lst_Products.Size = new Size(345, 224);
+            lst_Products.Size = new Size(441, 224);
             lst_Products.TabIndex = 0;
             lst_Products.UseCompatibleStateImageBehavior = false;
             lst_Products.View = View.Details;
@@ -60,7 +61,7 @@
             // 
             // productCountHeader
             // 
-            productCountHeader.Text = "Количество";
+            productCountHeader.Text = "Кол-во";
             productCountHeader.Width = 80;
             // 
             // label1
@@ -76,7 +77,7 @@
             // 
             cb_SelectDevice.DropDownStyle = ComboBoxStyle.DropDownList;
             cb_SelectDevice.FormattingEnabled = true;
-            cb_SelectDevice.Location = new Point(217, 326);
+            cb_SelectDevice.Location = new Point(263, 326);
             cb_SelectDevice.Name = "cb_SelectDevice";
             cb_SelectDevice.Size = new Size(140, 23);
             cb_SelectDevice.TabIndex = 2;
@@ -84,7 +85,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(12, 319);
+            label2.Location = new Point(58, 319);
             label2.Name = "label2";
             label2.Size = new Size(80, 30);
             label2.TabIndex = 3;
@@ -92,7 +93,7 @@
             // 
             // btn_ok
             // 
-            btn_ok.Location = new Point(137, 377);
+            btn_ok.Location = new Point(183, 377);
             btn_ok.Name = "btn_ok";
             btn_ok.Size = new Size(85, 36);
             btn_ok.TabIndex = 4;
@@ -103,7 +104,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(12, 284);
+            label3.Location = new Point(58, 284);
             label3.Name = "label3";
             label3.Size = new Size(69, 15);
             label3.TabIndex = 6;
@@ -112,7 +113,7 @@
             // txt_ProposalStatus
             // 
             txt_ProposalStatus.AutoSize = true;
-            txt_ProposalStatus.Location = new Point(217, 284);
+            txt_ProposalStatus.Location = new Point(263, 284);
             txt_ProposalStatus.Name = "txt_ProposalStatus";
             txt_ProposalStatus.Size = new Size(91, 15);
             txt_ProposalStatus.TabIndex = 7;
@@ -121,7 +122,7 @@
             // btn_uploadProposal
             // 
             btn_uploadProposal.Image = Properties.Resources.im_uploadProposal;
-            btn_uploadProposal.Location = new Point(161, 326);
+            btn_uploadProposal.Location = new Point(207, 326);
             btn_uploadProposal.Name = "btn_uploadProposal";
             btn_uploadProposal.Size = new Size(41, 23);
             btn_uploadProposal.TabIndex = 8;
@@ -131,7 +132,7 @@
             // im_UploadStatus
             // 
             im_UploadStatus.Image = Properties.Resources.gif_uploadProcess;
-            im_UploadStatus.Location = new Point(161, 326);
+            im_UploadStatus.Location = new Point(207, 326);
             im_UploadStatus.Name = "im_UploadStatus";
             im_UploadStatus.Size = new Size(41, 25);
             im_UploadStatus.SizeMode = PictureBoxSizeMode.CenterImage;
@@ -139,11 +140,16 @@
             im_UploadStatus.TabStop = false;
             im_UploadStatus.Visible = false;
             // 
+            // productGtinHeader
+            // 
+            productGtinHeader.Text = "GTIN";
+            productGtinHeader.Width = 160;
+            // 
             // ProposalDetailsForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(369, 425);
+            ClientSize = new Size(465, 425);
             Controls.Add(im_UploadStatus);
             Controls.Add(txt_ProposalStatus);
             Controls.Add(label3);
@@ -176,5 +182,6 @@
         private Label txt_ProposalStatus;
         private Button btn_uploadProposal;
         private PictureBox im_UploadStatus;
+        private ColumnHeader productGtinHeader;
     }
 }

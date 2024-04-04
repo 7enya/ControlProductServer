@@ -119,7 +119,7 @@ namespace ServerWinForm.Services
                 return null;
             string authData = Encoding.UTF8.GetString(await tcpClient.GetStream().ReadMessageAsync());
             ClientProfile? userProfile = null;
-            Guid proposalId = Guid.Empty;
+            string proposalId = string.Empty;
             if (authData.Contains("login=", StringComparison.InvariantCultureIgnoreCase) &&
                 authData.Contains("password=", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -132,7 +132,7 @@ namespace ServerWinForm.Services
                 // login=klhjkh=password=165484=propId=465421654564
                 if (messageCode == MessageCode.RECONNECTION)
                 {
-                    Guid.TryParse(splitedMes[5], out proposalId);
+                    proposalId = splitedMes[5];
                 }
             }
             else if (authData.Contains("macAddress=", StringComparison.InvariantCultureIgnoreCase))
@@ -146,7 +146,7 @@ namespace ServerWinForm.Services
                 // macAddress=2F-19-15-24=propId=465421654564
                 if (messageCode == MessageCode.RECONNECTION)
                 {
-                    Guid.TryParse(splitedMes[3], out proposalId);
+                    proposalId = splitedMes[3];
                 }
             }
             if (userProfile == null) return null;
@@ -157,13 +157,13 @@ namespace ServerWinForm.Services
                 return null;
             }
             var device = new Device(tcpClient, userProfile);
-            if (proposalId != Guid.Empty)
+            if (proposalId != string.Empty)
             {
                 var proposal = proposalList.FirstOrDefault(prop => prop!.Id == proposalId, null);
                 if (proposal != null) 
                 {
                     device.AttachedProposal = proposal;
-                    device.job = StartWaitingForResultoOfProposalProcessing;
+                    device.job = StartWaitingForResultOfProposalProcessing;
                     proposalList.Insert(proposalList.IndexOf(proposal), proposal);
                 }
             }
@@ -173,23 +173,27 @@ namespace ServerWinForm.Services
         private static async Task StartListenForServerProposals()
         {
             var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
-            var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
-            if (!File.Exists(proposalCache))
+            //var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
+            //if (!File.Exists(proposalCache))
+            //{
+            //    File.Create(proposalCache).Close();
+            //    Debug.WriteLine("Создан кэш-файл Proposal.txt");
+            //}
+            //if (!new FileInfo(proposalCache).IsEmpty())
+            //{
+            //    var cache = JsonFileReader.ReadFile<List<Proposal>>(proposalCache);
+            //    if (cache != null) { cache.ForEach(proposalList.Add); }
+            //    else Debug.WriteLine("Не удалось прочитать содержимое файла Proposal.txt");
+            //}
+            //await Task.Delay(3000);
+
+            var proposalsFromServer = JsonFileReader.ReadFile<List<Proposal>>(@$"{projectDirectory}\Request.json");
+
+            foreach (Proposal prop in proposalsFromServer)
             {
-                File.Create(proposalCache).Close();
-                Debug.WriteLine("Создан кэш-файл Proposal.txt");
+                proposalList.Add(prop);
             }
-            if (!new FileInfo(proposalCache).IsEmpty())
-            {
-                var cache = JsonFileReader.ReadFile<List<Proposal>>(proposalCache);
-                if (cache != null) { cache.ForEach(proposalList.Add); }
-                else Debug.WriteLine("Не удалось прочитать содержимое файла Proposal.txt");
-            }
-            await Task.Delay(3000);
-            var productList = JsonFileReader.ReadFile<List<Product>>(@$"{projectDirectory}\Request.json");
-            proposalList.Add(new Proposal(productList!));
-            await Task.Delay(5000);
-            proposalList.Add(new Proposal(productList!));
+
 
             //Чтение заявки из http-запроса
 
@@ -236,7 +240,7 @@ namespace ServerWinForm.Services
                     proposal.Status = ProposalStatus.IN_PROCESS;
                     int index = proposalList.IndexOf(proposal);
                     proposalList[index] = proposal;
-                    device.job = StartWaitingForResultoOfProposalProcessing;
+                    device.job = StartWaitingForResultOfProposalProcessing;
                     return true;
                 }
                 else
@@ -249,7 +253,7 @@ namespace ServerWinForm.Services
             catch (SocketException) { return false; }
         }
 
-        private static async Task StartWaitingForResultoOfProposalProcessing(Device device)
+        private static async Task StartWaitingForResultOfProposalProcessing(Device device)
         {
             switch(await device.NetworkStream.ReadCodeAsync())
             {
@@ -299,18 +303,18 @@ namespace ServerWinForm.Services
             return null;
         }
 
-        public static void SaveData()
-        {
-            var options = new JsonSerializerOptions
-            {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-            };
-            var cache = JsonSerializer.Serialize(proposalList, options);
-            var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
-            var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
-            File.WriteAllLines(proposalCache, [cache]);
-            Debug.WriteLine("Данные сохранены");
-        }
+        //public static void SaveData()
+        //{
+        //    var options = new JsonSerializerOptions
+        //    {
+        //        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+        //    };
+        //    var cache = JsonSerializer.Serialize(proposalList, options);
+        //    var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
+        //    var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
+        //    File.WriteAllLines(proposalCache, [cache]);
+        //    Debug.WriteLine("Данные сохранены");
+        //}
 
     }
 }
