@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
+using System.Net.Mail;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
@@ -188,18 +189,33 @@ namespace ServerWinForm.Services
             //await Task.Delay(3000);
 
             var proposalsFromServer = JsonFileReader.ReadFile<List<Proposal>>(@$"{projectDirectory}\Request.json");
-
-            foreach (Proposal prop in proposalsFromServer)
+            if (proposalsFromServer != null)
             {
-                proposalList.Add(prop);
+                foreach (Proposal prop in proposalsFromServer)
+                {
+                    proposalList.Add(prop);
+                }
             }
 
+            //using HttpClient httpClient = new HttpClient();
+            //using var response = await httpClient.GetAsync("http://192.168.89.108:9090/application/all");
+            //if (response.StatusCode != HttpStatusCode.BadRequest && response.StatusCode != HttpStatusCode.NotFound)
+            //{
+            //    var stream = await response.Content.ReadAsStreamAsync();
+            //    var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
+            //    if (proposalsFromServer != null)
+            //    {
+            //        foreach (Proposal prop in proposalsFromServer)
+            //        {
+            //            proposalList.Add(prop);
+            //        }
+            //    }
+            //}
+           
 
+            //var productList = JsonSerializer.Deserialize<List<Product>>(stream);
             //Чтение заявки из http-запроса
 
-            //HttpClient httpClient = new HttpClient();
-            //using var response = await httpClient.GetAsync("https://localhost:7094/1");
-            //var stream = await response.Content.ReadAsStreamAsync();
             //var productList = JsonSerializer.Deserialize<List<Product>>(stream);
             //proposalList.Add(new Proposal(productList));
 
