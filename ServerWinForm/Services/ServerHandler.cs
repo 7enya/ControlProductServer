@@ -27,8 +27,8 @@ namespace ServerWinForm.Services
 
         public static async Task InitializeServer()
         {
-            //var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
-            var ipAddress = IPAddress.Parse("127.0.0.1");
+            var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
+            //var ipAddress = IPAddress.Parse("127.0.0.1");
             server = new TcpListener(ipAddress!, 11000);
             server.Start();
             Debug.WriteLine($"Сервер прослушивает подключения на {server.LocalEndpoint}");
@@ -251,7 +251,7 @@ namespace ServerWinForm.Services
                 var responseCode = await device.NetworkStream.ReadCodeAsync();
                 if (responseCode == MessageCode.PROPOSAL_ACCEPTED)
                 {
-                    await device.NetworkStream.ClearStreamAsync();
+                    //await device.NetworkStream.ClearStreamAsync();
                     device.AttachedProposal = proposal;
                     proposal.Status = ProposalStatus.IN_PROCESS;
                     int index = proposalList.IndexOf(proposal);
@@ -261,7 +261,7 @@ namespace ServerWinForm.Services
                 }
                 else
                 {
-                    await device.NetworkStream.ClearStreamAsync();
+                   // await device.NetworkStream.ClearStreamAsync();
                     return false;
                 }
             }
