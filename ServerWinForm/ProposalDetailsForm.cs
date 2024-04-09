@@ -42,6 +42,8 @@ namespace ServerWinForm
                 case ProposalStatus.IN_PROCESS:
                     {
                         txt_ProposalStatus.Text = "Обрабатывается";
+                        btn_uploadProposal.Enabled = false;
+                        btn_uploadProposal.Visible = false;
                         cb_SelectDevice.Items.Add(
                             ServerHandler.connectedDevices
                             .First(device => device.AttachedProposal == SelectedProposal)
