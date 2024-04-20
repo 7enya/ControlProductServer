@@ -4,8 +4,6 @@ using ServerWinForm.Extensions;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http;
-using System.Net.Mail;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
@@ -18,21 +16,33 @@ namespace ServerWinForm.Services
 {
     public static class ServerHandler
     {
+        private static string? SERVER_ADDRESS;
+
+        public delegate void ChangeUiElement();
+        public static ChangeUiElement UpdateProposalsFail;
+
         public static object _lockDeviceObject = new object();
         private static Semaphore authSem = new Semaphore(1, 1);
         private static TcpListener server;
+        private static ConfigService configService;
         public static ObservableCollection<Device> connectedDevices { get; private set; } = new ObservableCollection<Device>();
         public static ObservableCollection<Proposal> proposalList { get; private set; } = new ObservableCollection<Proposal>();
 
 
         public static async Task InitializeServer()
         {
+            configService = new ConfigService();
+            SERVER_ADDRESS = configService.ServerAddress;
             var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
             //var ipAddress = IPAddress.Parse("127.0.0.1");
             server = new TcpListener(ipAddress!, 11000);
             server.Start();
             Debug.WriteLine($"Сервер прослушивает подключения на {server.LocalEndpoint}");
-            Task.Run(async () => StartListenForServerProposals());
+            Task.Run(async () =>
+            {
+                var isUploaded = await UploadProposalsFromServer();
+                if (!isUploaded) UpdateProposalsFail();
+            });
             while (true)
             {
                 if (server.Pending())
@@ -102,7 +112,6 @@ namespace ServerWinForm.Services
             }
         }
 
-
         private static async Task<Device?> getAuthorizedDeviceAsync(TcpClient tcpClient)
         {
             Debug.WriteLine($"Начат процесс авторизации устройства {tcpClient.Client.RemoteEndPoint}");
@@ -126,8 +135,7 @@ namespace ServerWinForm.Services
             {
                 // login=klhjkh=password=165484
                 var splitedMes = authData.Trim().Split('=');
-                var config = new ConfigService();
-                userProfile = config.GetProfiles().Find(
+                userProfile = configService.profiles.Find(
                     (elem) => (elem.login?.Equals(splitedMes[1]) ?? false) && (elem.password?.Equals(splitedMes[3]) ?? false)
                 );
                 // login=klhjkh=password=165484=propId=465421654564
@@ -140,8 +148,7 @@ namespace ServerWinForm.Services
             {
                 // macAddress=2F-19-15-24
                 var splitedMes = authData.Trim().Split('=');
-                var config = new ConfigService();
-                userProfile = config.GetProfiles().Find(
+                userProfile = configService.profiles.Find(
                     (elem) => elem.deviceMacAddress?.Equals(splitedMes[1]) ?? false
                 );
                 // macAddress=2F-19-15-24=propId=465421654564
@@ -171,7 +178,7 @@ namespace ServerWinForm.Services
             return device;
         }
 
-        private static async Task StartListenForServerProposals()
+        public static async Task<bool> UploadProposalsFromServer()
         {
             var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
             //var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
@@ -195,10 +202,12 @@ namespace ServerWinForm.Services
                 {
                     proposalList.Add(prop);
                 }
+                return true;
             }
-
+            return false;
+            //if (SERVER_ADDRESS == null) { return false; };
             //using HttpClient httpClient = new HttpClient();
-            //using var response = await httpClient.GetAsync("http://192.168.89.108:9090/application/all");
+            //using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
             //if (response.StatusCode != HttpStatusCode.BadRequest && response.StatusCode != HttpStatusCode.NotFound)
             //{
             //    var stream = await response.Content.ReadAsStreamAsync();
@@ -210,6 +219,7 @@ namespace ServerWinForm.Services
             //            proposalList.Add(prop);
             //        }
             //    }
+                  
             //}
            
 

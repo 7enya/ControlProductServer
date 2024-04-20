@@ -9,8 +9,9 @@ namespace ServerWinForm.Services
 {
     public class ConfigService
     {
-        private List<ClientProfile> profiles;
-
+        public List<ClientProfile> profiles { get; private set; }
+        public string? ServerAddress { get; private set; }
+        
         public ConfigService() {
             profiles = new List<ClientProfile>();
             NameValueCollection configKeys = ConfigurationManager.AppSettings;
@@ -21,17 +22,20 @@ namespace ServerWinForm.Services
                 int counter = 0;
                 foreach (var key in configKeys.AllKeys)
                 {
-                    counter++;
-                    if (key!.Contains("DeviceName", StringComparison.OrdinalIgnoreCase))
-                    { deviceName = configKeys[key]!; }
-                    else if (key!.Contains("MacAddress", StringComparison.OrdinalIgnoreCase))
-                    { macAddress = configKeys[key]!; }
-                    else if (key!.Contains("DeviceType", StringComparison.OrdinalIgnoreCase))
-                    { deviceType = configKeys[key]!; }
-                    else if (key!.Contains("Login", StringComparison.OrdinalIgnoreCase))
-                    { login = configKeys[key]!; }
-                    else if (key!.Contains("Password", StringComparison.OrdinalIgnoreCase))
-                    { password = configKeys[key]!; }
+                    if (string.IsNullOrEmpty(key)) { continue; } 
+                    if (key.Contains("ServerAddress", StringComparison.OrdinalIgnoreCase))
+                    { ServerAddress = configKeys[key]; continue; }
+                    ++counter;
+                    if (key.Contains("DeviceName", StringComparison.OrdinalIgnoreCase))
+                    { deviceName = configKeys[key]; }
+                    else if (key.Contains("MacAddress", StringComparison.OrdinalIgnoreCase))
+                    { macAddress = configKeys[key]; }
+                    else if (key.Contains("DeviceType", StringComparison.OrdinalIgnoreCase))
+                    { deviceType = configKeys[key]; }
+                    else if (key.Contains("Login", StringComparison.OrdinalIgnoreCase))
+                    { login = configKeys[key]; }
+                    else if (key.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                    { password = configKeys[key]; }
                     if (counter == COUNT_DEVICE_PARAMS)
                     {
                         counter = 0;
@@ -58,10 +62,6 @@ namespace ServerWinForm.Services
             //}
         }
 
-        public List<ClientProfile> GetProfiles()
-        {
-            return profiles;
-        }
         private static ImmutableHashSet<string> GetDeviceTypeList(NameValueCollection configKeys)
         {
             if (configKeys.Count != 0)

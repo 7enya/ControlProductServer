@@ -27,28 +27,17 @@ namespace ServerWinForm
             //});
             ServerHandler.connectedDevices.CollectionChanged += UpdateDeviceList;
             ServerHandler.proposalList.CollectionChanged += UpdateProposalList;
+            ServerHandler.UpdateProposalsFail += ShowUpdateProposalsFailMessage;
             ServerHandler.InitializeServer();
         }
 
-        private async void btnTest_Click(object sender, EventArgs e)
+        private void ShowUpdateProposalsFailMessage()
         {
-            Debug.WriteLine("TEST HERE");
-            var options = new JsonSerializerOptions
+            if (InvokeRequired)
             {
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-            };
-            var json = JsonSerializer.Serialize(ServerHandler.proposalList, options);
-            var device = ServerHandler.connectedDevices.First();
-            try
-            {
-                await device.NetworkStream.WriteMessageAsync(MessageCode.SEND_PROPOSAL, json);
-                var code = await device.NetworkStream.ReadCodeAsync();
-                if (code == MessageCode.PROPOSAL_ACCEPTED) { Debug.WriteLine($"({device.TcpClient.Client.RemoteEndPoint} -> Server) Заявка принята"); }
-                else Debug.WriteLine($"({device.TcpClient.Client.RemoteEndPoint} -> Server) Заявка отклонена");
+                lbl_UpdateProposalsFail.Invoke(new Action(() => lbl_UpdateProposalsFail.Visible = true));
             }
-            catch (IOException) { Debug.WriteLine($"Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение"); }
-            catch (SocketException) { Debug.WriteLine($"Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение"); }
-            finally { }
+            else lbl_UpdateProposalsFail.Visible = true;
         }
 
         private void UpdateDeviceList(object? sender, NotifyCollectionChangedEventArgs e)
@@ -233,6 +222,15 @@ namespace ServerWinForm
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+        }
+
+        private async void btn_UpdateProposals_Click(object sender, EventArgs e)
+        {
+            var isUpdated = await ServerHandler.UploadProposalsFromServer();
+            if (isUpdated)
+            {
+                lbl_UpdateProposalsFail.Visible = false;
+            }
         }
     }
 }
