@@ -8,8 +8,8 @@ namespace ServerWinForm.Enums
 {
     public enum ProposalStatus
     {
-        UNPROCESSED,
-        IN_PROCESS, 
-        PROCESSED
+        UNPROCESSED, // не обработано
+        IN_PROCESS, // обрабатывается
+        PROCESSED // обработано
     }
 }

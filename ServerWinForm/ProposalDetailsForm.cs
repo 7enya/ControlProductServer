@@ -41,7 +41,7 @@ namespace ServerWinForm
                     }
                 case ProposalStatus.IN_PROCESS:
                     {
-                        txt_ProposalStatus.Text = "Обрабатывается";
+                        txt_ProposalStatus.Text = "В обработке";
                         btn_uploadProposal.Enabled = false;
                         btn_uploadProposal.Visible = false;
                         cb_SelectDevice.Items.Add(
@@ -53,7 +53,7 @@ namespace ServerWinForm
                     }
                 case ProposalStatus.PROCESSED:
                     {
-                        txt_ProposalStatus.Text = "Выполнено";
+                        txt_ProposalStatus.Text = "Обработано";
                         break;
                     }
             }
@@ -88,7 +88,7 @@ namespace ServerWinForm
             if (isAttached)
             {
                 im_UploadStatus.Image = Resources.im_uploadFinished;
-                txt_ProposalStatus.Text = "Обрабатывается";
+                txt_ProposalStatus.Text = "В обработке";
                 cb_SelectDevice.Enabled = false;
             }
             else

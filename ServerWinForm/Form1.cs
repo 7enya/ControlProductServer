@@ -105,7 +105,7 @@ namespace ServerWinForm
                                         {
                                             device = ServerHandler.connectedDevices.First(item => item.AttachedProposal == proposal);
                                         }
-                                        if (device != null) { status = $"Обрабатывается ({device.ClientProfile.deviceName})"; }
+                                        if (device != null) { status = $"В обработке ({device.ClientProfile.deviceName})"; }
                                         else
                                         {
                                             proposal.Status = ProposalStatus.UNPROCESSED;
@@ -116,7 +116,7 @@ namespace ServerWinForm
                                     }
                                 case ProposalStatus.PROCESSED:
                                     {
-                                        status = "Выполнено";
+                                        status = "Обработано";
                                         break;
                                     }
                             }
@@ -161,7 +161,7 @@ namespace ServerWinForm
                                     {
                                         device = ServerHandler.connectedDevices.First(item => item.AttachedProposal == e.OldItems[0] as Proposal);
                                     }
-                                    status = $"Обрабатывается ({device.ClientProfile.deviceName})";
+                                    status = $"В обработке ({device.ClientProfile.deviceName})";
                                     break;
                                 }
                             case ProposalStatus.PROCESSED:
