@@ -13,31 +13,41 @@ namespace ServerWinForm.Extensions
 {
     public static class NetworkStreamExtension
     {
-        private const int BYTES_FOR_MESSAGE_LENGTH = 4;
-        private const int MAX_MESSAGE_SIZE = 104_857_600; // 100 MB
+        private static int BYTES_FOR_MESSAGE_LENGTH = 2;
+
+        // максимальное количество однобайтных символов в кодироке UTF-8, которые вмещаются в BYTES_FOR_MESSAGE_LENGTH 
+        private static int MAX_MESSAGE_SYMB_SIZE = ((int)Math.Pow(2, BYTES_FOR_MESSAGE_LENGTH * 8)) - 2;
 
         public static async Task<bool> WriteMessageAsync(this NetworkStream stream, MessageCode code, string? message)
         {
+            byte[] buffer; 
             if (message != null)
             {
-                var messageAsBytes = Encoding.UTF8.GetBytes(message);
-                var buffer = new byte[1 + BYTES_FOR_MESSAGE_LENGTH + messageAsBytes.Length];
-                var messageLengthBytes = BitConverter.GetBytes(messageAsBytes.Length);
-                if (messageAsBytes.Length > MAX_MESSAGE_SIZE)
+                if (message.Length > MAX_MESSAGE_SYMB_SIZE)
                 {
                     return false;
                 }
-                buffer[0] = (byte)code;
-                messageLengthBytes.CopyTo(buffer, 1);
-                messageAsBytes.CopyTo(buffer, 5);
+                var messageAsBytes = Encoding.UTF8.GetBytes(message);
+                if (messageAsBytes.Length > MAX_MESSAGE_SYMB_SIZE)
+                {
+                    return false;
+                }
+                buffer = new byte[BYTES_FOR_MESSAGE_LENGTH + 1 + messageAsBytes.Length];
+                var messageLengthAsBytes = BitConverter.GetBytes( (short)(1 + messageAsBytes.Length));
+                messageLengthAsBytes.CopyTo(buffer, 0);
+                buffer[BYTES_FOR_MESSAGE_LENGTH] = (byte)code;
+                messageAsBytes.CopyTo(buffer, BYTES_FOR_MESSAGE_LENGTH + 1);
                 await stream.WriteAsync(buffer, 0, buffer.Length);
                 await stream.FlushAsync();
-                Debug.WriteLine($"Sent package -> code: {code}, length: {message.Length}, message: {message}");
+                Debug.WriteLine($"Sent package -> length: {messageAsBytes.Length + 1} bytes, code: {code}, message: {message}");
                 return true;
             }
             else
             {
-                var buffer = new byte[1] { (byte) code };
+                var messageLengthAsBytes = BitConverter.GetBytes((short)1);
+                buffer = new byte[messageLengthAsBytes.Length + 1];
+                messageLengthAsBytes.CopyTo(buffer, 0);
+                buffer[BYTES_FOR_MESSAGE_LENGTH] = (byte)code;
                 await stream.WriteAsync(buffer, 0, buffer.Length);
                 await stream.FlushAsync();
                 Debug.WriteLine($"Sent package -> code: {code}");
@@ -47,13 +57,13 @@ namespace ServerWinForm.Extensions
 
         public static async Task<byte[]> ReadMessageAsync(this NetworkStream stream)
         {
-            var messageLengthBytes = new byte[BYTES_FOR_MESSAGE_LENGTH];
+            var messageLengthAsBytes = new byte[BYTES_FOR_MESSAGE_LENGTH];
             var readBytes = 0;
-            while (readBytes != 4)
+            while (readBytes != BYTES_FOR_MESSAGE_LENGTH)
             {
-                readBytes += await stream.ReadAsync(messageLengthBytes, readBytes, messageLengthBytes.Length);
+                readBytes += await stream.ReadAsync(messageLengthAsBytes, readBytes, messageLengthAsBytes.Length);
             }
-            var message = new byte[BitConverter.ToInt32(messageLengthBytes, 0)];
+            var message = new byte[BitConverter.ToInt16(messageLengthAsBytes, 0)];
             readBytes = 0;
             try
             {
@@ -61,21 +71,16 @@ namespace ServerWinForm.Extensions
                 {
                     readBytes += await stream.ReadAsync(message, readBytes, message.Length);
                 }
-                Debug.WriteLine($"Accepted package -> length: {message.Length}, message: {Encoding.UTF8.GetString(message)}");
+                if (message.Length == 1)
+                    Debug.WriteLine($"Accepted package -> length: {message.Length}, code: {(MessageCode)message[0]}");
+                else
+                    Debug.WriteLine($"Accepted package -> length: {message.Length}, code: {(MessageCode)message[0]}, message: {Encoding.UTF8.GetString(message, 1, message.Length - 1)}");
                 return message;
             } 
             catch (ArgumentOutOfRangeException)
             {
                 throw new FormatException();
             }
-        }
-
-        public static async Task<MessageCode> ReadCodeAsync(this NetworkStream stream)
-        {
-            var messageCode = new byte[1];
-            await stream.ReadAsync(messageCode, 0, messageCode.Length);
-            Debug.WriteLine($"Accepted code: {(MessageCode) messageCode[0]}");
-            return (MessageCode) messageCode[0];
         }
 
         public static async Task ClearStreamAsync(this NetworkStream stream)

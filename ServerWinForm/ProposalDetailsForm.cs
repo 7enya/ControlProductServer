@@ -84,7 +84,7 @@ namespace ServerWinForm
             //await Task.Delay(3000);
             var device =
                 ServerHandler.connectedDevices.First(device => device.ClientProfile.deviceName.Equals(SelectedDeviceName));
-            var isAttached = await ServerHandler.AttachProposalTo(device, SelectedProposal);
+            var isAttached = await ServerHandler.AttachProposalToDevice(device, SelectedProposal);
             if (isAttached)
             {
                 im_UploadStatus.Image = Resources.im_uploadFinished;

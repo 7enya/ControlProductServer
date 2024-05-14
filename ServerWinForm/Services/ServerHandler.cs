@@ -33,8 +33,8 @@ namespace ServerWinForm.Services
         {
             configService = new ConfigService();
             SERVER_ADDRESS = configService.ServerAddress;
-            var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
-            //var ipAddress = IPAddress.Parse("127.0.0.1");
+            //var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
+            var ipAddress = IPAddress.Parse("127.0.0.1");
             server = new TcpListener(ipAddress!, 11000);
             server.Start();
             Debug.WriteLine($"Сервер прослушивает подключения на {server.LocalEndpoint}");
@@ -117,17 +117,17 @@ namespace ServerWinForm.Services
             Debug.WriteLine($"Начат процесс авторизации устройства {tcpClient.Client.RemoteEndPoint}");
             TimeSpan timeOut = TimeSpan.FromSeconds(10);
             var timeoutTask = Task.Delay(timeOut);
-            var readCodeTask = tcpClient.GetStream().ReadCodeAsync();
-            var completedTask = await Task.WhenAny(timeoutTask, readCodeTask);
+            var readMessageTask = tcpClient.GetStream().ReadMessageAsync();
+            var completedTask = await Task.WhenAny(timeoutTask, readMessageTask);
             if (completedTask == timeoutTask)
             {
                 Debug.WriteLine($"(Сервер <- {tcpClient.Client.RemoteEndPoint}) Превышено время ожидания ({timeOut.Seconds} сек.)");
                 return null;
             }
-            var messageCode = readCodeTask.Result;
-            if (messageCode != MessageCode.START_AUTH && messageCode != MessageCode.RECONNECTION)
+            var messageCode = readMessageTask.Result[0];
+            if (messageCode != (byte)MessageCode.START_AUTH && messageCode != (byte)MessageCode.RECONNECTION)
                 return null;
-            string authData = Encoding.UTF8.GetString(await tcpClient.GetStream().ReadMessageAsync());
+            string authData = Encoding.UTF8.GetString(readMessageTask.Result, 1, readMessageTask.Result.Length - 1);
             ClientProfile? userProfile = null;
             string proposalId = string.Empty;
             if (authData.Contains("login=", StringComparison.InvariantCultureIgnoreCase) &&
@@ -139,7 +139,7 @@ namespace ServerWinForm.Services
                     (elem) => (elem.login?.Equals(splitedMes[1]) ?? false) && (elem.password?.Equals(splitedMes[3]) ?? false)
                 );
                 // login=klhjkh=password=165484=propId=465421654564
-                if (messageCode == MessageCode.RECONNECTION)
+                if (messageCode == (byte)MessageCode.RECONNECTION)
                 {
                     proposalId = splitedMes[5];
                 }
@@ -152,7 +152,7 @@ namespace ServerWinForm.Services
                     (elem) => elem.deviceMacAddress?.Equals(splitedMes[1]) ?? false
                 );
                 // macAddress=2F-19-15-24=propId=465421654564
-                if (messageCode == MessageCode.RECONNECTION)
+                if (messageCode == (byte)MessageCode.RECONNECTION)
                 {
                     proposalId = splitedMes[3];
                 }
@@ -200,11 +200,18 @@ namespace ServerWinForm.Services
             {
                 foreach (Proposal prop in proposalsFromServer)
                 {
-                    proposalList.Add(prop);
+                    var localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
+                    if (localProposal != null)
+                    {
+                        if (localProposal.Status != ProposalStatus.IN_PROCESS)
+                            localProposal.Status = prop.Status;
+                    }
+                    else proposalList.Add(prop);
                 }
                 return true;
             }
             return false;
+
             //if (SERVER_ADDRESS == null) { return false; };
             //using HttpClient httpClient = new HttpClient();
             //using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
@@ -246,7 +253,7 @@ namespace ServerWinForm.Services
         }
 
 
-        public static async Task<bool> AttachProposalTo(Device device, Proposal proposal)
+        public static async Task<bool> AttachProposalToDevice(Device device, Proposal proposal)
         {
             var options = new JsonSerializerOptions
             {
@@ -258,8 +265,8 @@ namespace ServerWinForm.Services
                 Debug.WriteLine($"(Server -> {device.TcpClient.Client.RemoteEndPoint}) Началась отправка заявки");
                 var isSent = await device.NetworkStream.WriteMessageAsync(MessageCode.SEND_PROPOSAL, jsonfile);
                 Debug.WriteLine($"(Server -> {device.TcpClient.Client.RemoteEndPoint}) Заявка отправлена");
-                var responseCode = await device.NetworkStream.ReadCodeAsync();
-                if (responseCode == MessageCode.PROPOSAL_ACCEPTED)
+                var response = await device.NetworkStream.ReadMessageAsync();
+                if (response[0] == (byte)MessageCode.PROPOSAL_ACCEPTED)
                 {
                     //await device.NetworkStream.ClearStreamAsync();
                     device.AttachedProposal = proposal;
@@ -281,13 +288,11 @@ namespace ServerWinForm.Services
 
         private static async Task StartWaitingForResultOfProposalProcessing(Device device)
         {
-            switch(await device.NetworkStream.ReadCodeAsync())
+            var response = await device.NetworkStream.ReadMessageAsync();
+            switch ((MessageCode)response[0])
             {
                 case MessageCode.JOB_DONE:
                     {
-                        // Отправить результат на сервер 1С
-                        // Отправить в базу данных json-файл с отмеченными продуктами
-
                         var proposal = device.AttachedProposal;
                         device.AttachedProposal = null;
                         proposal!.Status = ProposalStatus.PROCESSED;
@@ -307,7 +312,7 @@ namespace ServerWinForm.Services
                         break;
                     }
             }
-            await device.NetworkStream.ClearStreamAsync();
+            //await device.NetworkStream.ClearStreamAsync();
         }
 
 
