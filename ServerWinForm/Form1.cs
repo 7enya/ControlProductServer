@@ -157,11 +157,20 @@ namespace ServerWinForm
                             case ProposalStatus.IN_PROCESS:
                                 {
                                     Device device;
-                                    lock (ServerHandler._lockDeviceObject)
+                                    if (e.OldItems != null && e.OldItems[0] != null)
                                     {
-                                        device = ServerHandler.connectedDevices.First(item => item.AttachedProposal == e.OldItems[0] as Proposal);
+                                        Debug.WriteLine($"Connected Devices -> {ServerHandler.connectedDevices.Count}");
+                                        lock (ServerHandler._lockDeviceObject)
+                                        {
+                                            device = ServerHandler.connectedDevices.FirstOrDefault(item => item.AttachedProposal == e.OldItems[0] as Proposal, null);
+                                        }
+                                        if (device != null)
+                                        {
+                                            status = $"В обработке ({device.ClientProfile.deviceName})";
+                                        }
+                                        else return;
                                     }
-                                    status = $"В обработке ({device.ClientProfile.deviceName})";
+
                                     break;
                                 }
                             case ProposalStatus.PROCESSED:

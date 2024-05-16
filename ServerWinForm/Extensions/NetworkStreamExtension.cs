@@ -62,6 +62,8 @@ namespace ServerWinForm.Extensions
             while (readBytes != BYTES_FOR_MESSAGE_LENGTH)
             {
                 readBytes += await stream.ReadAsync(messageLengthAsBytes, readBytes, messageLengthAsBytes.Length);
+                if (readBytes == 0)
+                    throw new SocketException();
             }
             var message = new byte[BitConverter.ToInt16(messageLengthAsBytes, 0)];
             readBytes = 0;
@@ -70,6 +72,8 @@ namespace ServerWinForm.Extensions
                 while (readBytes != message.Length)
                 {
                     readBytes += await stream.ReadAsync(message, readBytes, message.Length);
+                    if (readBytes == 0)
+                        throw new SocketException();
                 }
                 if (message.Length == 1)
                     Debug.WriteLine($"Accepted package -> length: {message.Length}, code: {(MessageCode)message[0]}");

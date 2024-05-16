@@ -30,7 +30,8 @@ namespace ServerWinForm.Data
 
         public bool isConnected()
         {
-            return (TcpClient.Client.Poll(1, SelectMode.SelectRead) && !NetworkStream.DataAvailable) ? false : true;
+            //return (TcpClient.Client.Poll(2000, SelectMode.SelectRead) && !NetworkStream.DataAvailable) ? false : true;
+            return !((TcpClient.Client.Poll(1000, SelectMode.SelectRead) && (TcpClient.Client.Available == 0)) || !TcpClient.Client.Connected);
         }
 
         public async Task DoJobIfThereIs()

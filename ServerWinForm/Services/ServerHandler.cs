@@ -33,8 +33,8 @@ namespace ServerWinForm.Services
         {
             configService = new ConfigService();
             SERVER_ADDRESS = configService.ServerAddress;
-            //var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
-            var ipAddress = IPAddress.Parse("127.0.0.1");
+            var ipAddress = GetIPv4Address(NetworkInterfaceType.Wireless80211) ?? GetIPv4Address(NetworkInterfaceType.Ethernet);
+            //var ipAddress = IPAddress.Parse("127.0.0.1");
             server = new TcpListener(ipAddress!, 11000);
             server.Start();
             Debug.WriteLine($"Сервер прослушивает подключения на {server.LocalEndpoint}");
@@ -77,7 +77,9 @@ namespace ServerWinForm.Services
                 authSem.Release();
                 await device.NetworkStream.WriteMessageAsync(MessageCode.ACCESS_GRANTED, null);
                 while (device.isConnected()) {
+                    //Debug.WriteLine($"Устройство {tcpClient.Client.RemoteEndPoint} подключено");
                     await device.DoJobIfThereIs(); 
+                    await Task.Delay(500);
                 }
                 Debug.WriteLine($"(GOOD) Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
             }
@@ -198,9 +200,10 @@ namespace ServerWinForm.Services
             var proposalsFromServer = JsonFileReader.ReadFile<List<Proposal>>(@$"{projectDirectory}\Request.json");
             if (proposalsFromServer != null)
             {
+                Proposal? localProposal;
                 foreach (Proposal prop in proposalsFromServer)
                 {
-                    var localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
+                    localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
                     if (localProposal != null)
                     {
                         if (localProposal.Status != ProposalStatus.IN_PROCESS)
@@ -282,12 +285,13 @@ namespace ServerWinForm.Services
                     return false;
                 }
             }
-            catch (IOException) { return false; }
+            catch (IOException) { Debug.WriteLine("Возникло исключение"); return false; }
             catch (SocketException) { return false; }
         }
 
         private static async Task StartWaitingForResultOfProposalProcessing(Device device)
         {
+            Debug.WriteLine("Жду сообщения о заявке");
             var response = await device.NetworkStream.ReadMessageAsync();
             switch ((MessageCode)response[0])
             {
@@ -308,6 +312,7 @@ namespace ServerWinForm.Services
                         proposal!.Status = ProposalStatus.UNPROCESSED;
                         var index = proposalList.IndexOf(proposal);
                         proposalList[index] = proposal;
+                        device.job = null;
 
                         break;
                     }
