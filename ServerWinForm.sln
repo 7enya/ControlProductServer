@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerWinForm", "ServerWinForm\ServerWinForm.csproj", "{246E97CB-2389-46D0-B581-F7BF2C2F8396}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{9230AD79-F5CA-41C8-A24C-5CF8D5D3B00E}"
-	ProjectSection(SolutionItems) = preProject
-		App.config = App.config
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

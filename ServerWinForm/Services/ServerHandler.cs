@@ -119,8 +119,18 @@ namespace ServerWinForm.Services
             Debug.WriteLine($"Начат процесс авторизации устройства {tcpClient.Client.RemoteEndPoint}");
             TimeSpan timeOut = TimeSpan.FromSeconds(10);
             var timeoutTask = Task.Delay(timeOut);
-            var readMessageTask = tcpClient.GetStream().ReadMessageAsync();
-            var completedTask = await Task.WhenAny(timeoutTask, readMessageTask);
+            Task<byte[]>? readMessageTask;
+            Task? completedTask;
+            try
+            {
+                readMessageTask = tcpClient.GetStream().ReadMessageAsync();
+                completedTask = await Task.WhenAny(timeoutTask, readMessageTask);
+            }
+            catch (FormatException)
+            {
+                Debug.WriteLine($"Получено сообщение с неверным форматом от {tcpClient.Client.RemoteEndPoint}");
+                return null;
+            }
             if (completedTask == timeoutTask)
             {
                 Debug.WriteLine($"(Сервер <- {tcpClient.Client.RemoteEndPoint}) Превышено время ожидания ({timeOut.Seconds} сек.)");
@@ -197,41 +207,59 @@ namespace ServerWinForm.Services
             //}
             //await Task.Delay(3000);
 
-            var proposalsFromServer = JsonFileReader.ReadFile<List<Proposal>>(@$"{projectDirectory}\Request.json");
-            if (proposalsFromServer != null)
-            {
-                Proposal? localProposal;
-                foreach (Proposal prop in proposalsFromServer)
-                {
-                    localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
-                    if (localProposal != null)
-                    {
-                        if (localProposal.Status != ProposalStatus.IN_PROCESS)
-                            localProposal.Status = prop.Status;
-                    }
-                    else proposalList.Add(prop);
-                }
-                return true;
-            }
-            return false;
-
-            //if (SERVER_ADDRESS == null) { return false; };
-            //using HttpClient httpClient = new HttpClient();
-            //using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
-            //if (response.StatusCode != HttpStatusCode.BadRequest && response.StatusCode != HttpStatusCode.NotFound)
+            //var proposalsFromServer = JsonFileReader.ReadFile<List<Proposal>>(@$"{projectDirectory}\Request.json");
+            //if (proposalsFromServer != null)
             //{
-            //    var stream = await response.Content.ReadAsStreamAsync();
-            //    var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
-            //    if (proposalsFromServer != null)
+            //    Proposal? localProposal;
+            //    foreach (Proposal prop in proposalsFromServer)
             //    {
-            //        foreach (Proposal prop in proposalsFromServer)
+            //        localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
+            //        if (localProposal != null)
             //        {
-            //            proposalList.Add(prop);
+            //            if (localProposal.Status != ProposalStatus.IN_PROCESS)
+            //                localProposal.Status = prop.Status;
             //        }
+            //        else proposalList.Add(prop);
             //    }
-                  
+            //    return true;
             //}
-           
+            //return false;
+
+            if (SERVER_ADDRESS == null) { return false; };
+            using HttpClient httpClient = new HttpClient();
+            try
+            {
+                using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
+                if (response.StatusCode != HttpStatusCode.BadRequest && response.StatusCode != HttpStatusCode.NotFound)
+                {
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
+                    if (proposalsFromServer != null)
+                    {
+                        Proposal? localProposal;
+                        foreach (Proposal prop in proposalsFromServer)
+                        {
+                            localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
+                            if (localProposal != null)
+                            {
+                                if (localProposal.Status != ProposalStatus.IN_PROCESS)
+                                    localProposal.Status = prop.Status;
+                            }
+                            else proposalList.Add(prop);
+                        }
+                        return true;
+                    }
+                    else return false;
+                }
+                else return false;
+            }
+            catch (HttpRequestException) 
+            {
+                Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
+                return false;
+            }
+            
+
 
             //var productList = JsonSerializer.Deserialize<List<Product>>(stream);
             //Чтение заявки из http-запроса

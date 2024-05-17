@@ -65,7 +65,14 @@ namespace ServerWinForm.Extensions
                 if (readBytes == 0)
                     throw new SocketException();
             }
+            Debug.Write("\nMessage length (bytes) -> ");
+            foreach (byte b in messageLengthAsBytes)
+            {
+                Debug.Write($"{b} ");
+            }
+            Debug.WriteLine("\n");
             var message = new byte[BitConverter.ToInt16(messageLengthAsBytes, 0)];
+            Debug.WriteLine($"Message Length -> {message.Length}");
             readBytes = 0;
             try
             {
