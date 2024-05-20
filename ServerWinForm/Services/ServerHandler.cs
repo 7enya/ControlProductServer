@@ -75,7 +75,7 @@ namespace ServerWinForm.Services
                 Debug.WriteLine($"Устройство {device.ClientProfile.deviceName} ({tcpClient.Client.RemoteEndPoint}) подключено");
                 connectedDevices.Add(device);
                 authSem.Release();
-                await device.NetworkStream.WriteMessageAsync(MessageCode.ACCESS_GRANTED, null);
+                await device.NetworkStream.WriteMessageAsync(MessageCode.ACCESS_GRANTED, configService.ServerAddress);
                 while (device.isConnected()) {
                     //Debug.WriteLine($"Устройство {tcpClient.Client.RemoteEndPoint} подключено");
                     await device.DoJobIfThereIs(); 
@@ -129,6 +129,10 @@ namespace ServerWinForm.Services
             catch (FormatException)
             {
                 Debug.WriteLine($"Получено сообщение с неверным форматом от {tcpClient.Client.RemoteEndPoint}");
+                return null;
+            }
+            catch (SocketException)
+            {
                 return null;
             }
             if (completedTask == timeoutTask)
@@ -192,6 +196,7 @@ namespace ServerWinForm.Services
 
         public static async Task<bool> UploadProposalsFromServer()
         {
+            Debug.WriteLine("Загружаются заявки с сервера");
             var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
             //var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
             //if (!File.Exists(proposalCache))
@@ -227,6 +232,7 @@ namespace ServerWinForm.Services
 
             if (SERVER_ADDRESS == null) { return false; };
             using HttpClient httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(5);
             try
             {
                 using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
@@ -247,6 +253,7 @@ namespace ServerWinForm.Services
                             }
                             else proposalList.Add(prop);
                         }
+                        Debug.WriteLine("Заявки загружены с сервера");
                         return true;
                     }
                     else return false;

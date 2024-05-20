@@ -235,11 +235,13 @@ namespace ServerWinForm
 
         private async void btn_UpdateProposals_Click(object sender, EventArgs e)
         {
+            btn_UpdateProposals.Enabled = false;
             var isUpdated = await ServerHandler.UploadProposalsFromServer();
             if (isUpdated)
             {
                 lbl_UpdateProposalsFail.Visible = false;
             }
+            btn_UpdateProposals.Enabled = true;
         }
     }
 }
