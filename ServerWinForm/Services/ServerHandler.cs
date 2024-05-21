@@ -28,7 +28,6 @@ namespace ServerWinForm.Services
         public static ObservableCollection<Device> connectedDevices { get; private set; } = new ObservableCollection<Device>();
         public static ObservableCollection<Proposal> proposalList { get; private set; } = new ObservableCollection<Proposal>();
 
-
         public static async Task InitializeServer()
         {
             configService = new ConfigService();
@@ -230,66 +229,44 @@ namespace ServerWinForm.Services
             //}
             //return false;
 
-            if (SERVER_ADDRESS == null) { return false; };
+            if (SERVER_ADDRESS == null) {
+                return false; 
+            }
             using HttpClient httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(5);
             try
             {
                 using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
-                if (response.StatusCode != HttpStatusCode.BadRequest && response.StatusCode != HttpStatusCode.NotFound)
+                if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    var stream = await response.Content.ReadAsStreamAsync();
-                    var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
-                    if (proposalsFromServer != null)
-                    {
-                        Proposal? localProposal;
-                        foreach (Proposal prop in proposalsFromServer)
-                        {
-                            localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
-                            if (localProposal != null)
-                            {
-                                if (localProposal.Status != ProposalStatus.IN_PROCESS)
-                                    localProposal.Status = prop.Status;
-                            }
-                            else proposalList.Add(prop);
-                        }
-                        Debug.WriteLine("Заявки загружены с сервера");
-                        return true;
-                    }
-                    else return false;
+                    return false;
                 }
-                else return false;
+                var stream = await response.Content.ReadAsStreamAsync();
+                var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
+                if (proposalsFromServer == null)
+                {
+                    return false;
+                }
+                Proposal? localProposal;
+                foreach (Proposal prop in proposalsFromServer)
+                {
+                    localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
+                    if (localProposal != null)
+                    {
+                        if (localProposal.Status != ProposalStatus.IN_PROCESS)
+                            localProposal.Status = prop.Status;
+                    }
+                    else proposalList.Add(prop);
+                }
+                Debug.WriteLine("Заявки загружены с сервера");
+                return true;
             }
             catch (HttpRequestException) 
             {
                 Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
                 return false;
             }
-            
-
-
-            //var productList = JsonSerializer.Deserialize<List<Product>>(stream);
-            //Чтение заявки из http-запроса
-
-            //var productList = JsonSerializer.Deserialize<List<Product>>(stream);
-            //proposalList.Add(new Proposal(productList));
-
-            //if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound)
-            //{
-            //    // получаем информацию об ошибке
-            //    Error? error = await response.Content.ReadFromJsonAsync<Error>();
-            //    Console.WriteLine(response.StatusCode);
-            //    Console.WriteLine(error?.Message);
-            //}
-            //else
-            //{
-            //    response.Dispose
-            //    // если запрос завершился успешно, получаем объект Person
-            //    Proposal person = await response.Content.ReadFromJsonAsync<Proposal>();
-            //    Console.WriteLine($"Name: {person?.Name}   Age: {person?.Age}");
-            //}
         }
-
 
         public static async Task<bool> AttachProposalToDevice(Device device, Proposal proposal)
         {
@@ -306,7 +283,6 @@ namespace ServerWinForm.Services
                 var response = await device.NetworkStream.ReadMessageAsync();
                 if (response[0] == (byte)MessageCode.PROPOSAL_ACCEPTED)
                 {
-                    //await device.NetworkStream.ClearStreamAsync();
                     device.AttachedProposal = proposal;
                     proposal.Status = ProposalStatus.IN_PROCESS;
                     int index = proposalList.IndexOf(proposal);
@@ -316,11 +292,14 @@ namespace ServerWinForm.Services
                 }
                 else
                 {
-                   // await device.NetworkStream.ClearStreamAsync();
                     return false;
                 }
             }
-            catch (IOException) { Debug.WriteLine("Возникло исключение"); return false; }
+            catch (IOException) 
+            { 
+                Debug.WriteLine("Возникло исключение"); 
+                return false; 
+            }
             catch (SocketException) { return false; }
         }
 
@@ -352,7 +331,6 @@ namespace ServerWinForm.Services
                         break;
                     }
             }
-            //await device.NetworkStream.ClearStreamAsync();
         }
 
 
@@ -373,19 +351,5 @@ namespace ServerWinForm.Services
             }
             return null;
         }
-
-        //public static void SaveData()
-        //{
-        //    var options = new JsonSerializerOptions
-        //    {
-        //        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-        //    };
-        //    var cache = JsonSerializer.Serialize(proposalList, options);
-        //    var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
-        //    var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
-        //    File.WriteAllLines(proposalCache, [cache]);
-        //    Debug.WriteLine("Данные сохранены");
-        //}
-
     }
 }

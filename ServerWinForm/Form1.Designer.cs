@@ -175,7 +175,6 @@
             Margin = new Padding(3, 2, 3, 2);
             Name = "Form1";
             Text = "Form1";
-            FormClosing += Form1_FormClosing;
             tabControl1.ResumeLayout(false);
             tabRequests.ResumeLayout(false);
             tabRequests.PerformLayout();

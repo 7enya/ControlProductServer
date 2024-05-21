@@ -1,20 +1,13 @@
-﻿using ServerWinForm.Data;
-using ServerWinForm.Enums;
-using System;
-using System.Collections.Generic;
+﻿using ServerWinForm.Enums;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace ServerWinForm.Extensions
 {
     public static class NetworkStreamExtension
     {
         private static int BYTES_FOR_MESSAGE_LENGTH = 2;
-
         // максимальное количество однобайтных символов в кодироке UTF-8, которые вмещаются в BYTES_FOR_MESSAGE_LENGTH 
         private static int MAX_MESSAGE_SYMB_SIZE = ((int)Math.Pow(2, BYTES_FOR_MESSAGE_LENGTH * 8)) - 2;
 

@@ -1,14 +1,8 @@
 ﻿using ServerWinForm.Data;
 using ServerWinForm.Enums;
-using ServerWinForm.Extensions;
 using ServerWinForm.Services;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Net.Sockets;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
 
 namespace ServerWinForm
 {
@@ -227,10 +221,6 @@ namespace ServerWinForm
             var device = lst_Connections.SelectedItems[0].Text;
             var prop = ServerHandler.connectedDevices.First(item => item.ClientProfile.deviceName.Equals(device)).AttachedProposal;
             Debug.WriteLine($"Attached prop = {prop} ({prop?.Id})");
-        }
-
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
         }
 
         private async void btn_UpdateProposals_Click(object sender, EventArgs e)

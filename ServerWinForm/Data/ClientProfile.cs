@@ -15,7 +15,7 @@ namespace ServerWinForm.Data
         public DeviceType deviceType { get; set; }
         public string? login { get; set; }
         public string? password { get; set; }
-        
+       
         public ClientProfile (string name, string? macAddress, DeviceType type, string? login, string? password)
         {
             deviceName = name;

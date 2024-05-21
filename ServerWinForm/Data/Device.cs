@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
-using ServerWinForm.Enums;
+﻿using System.Net.Sockets;
 
 namespace ServerWinForm.Data
 {
@@ -12,13 +6,11 @@ namespace ServerWinForm.Data
     {
         public delegate Task Job(Device device);
         public Job? job { private get; set; }
-
         public TcpClient TcpClient { get; set; }
         public ClientProfile ClientProfile { get; private set; }
         public NetworkStream NetworkStream { get; set; }
         public Proposal? AttachedProposal { get; set; }
        
-
         public Device(TcpClient client, ClientProfile profile)
         {
             TcpClient = client;
@@ -26,7 +18,6 @@ namespace ServerWinForm.Data
             NetworkStream = client.GetStream();
             AttachedProposal = null;
         }
-
 
         public bool isConnected()
         {

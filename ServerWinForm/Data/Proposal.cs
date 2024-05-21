@@ -1,10 +1,5 @@
 ﻿using ServerWinForm.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace ServerWinForm.Data
 {
@@ -30,15 +25,5 @@ namespace ServerWinForm.Data
             Products = products;
             Status = ProposalStatus.UNPROCESSED;
         }
-
-        //[JsonConstructor]
-        //public Proposal(string id, DateTime DateTime, List<Product> Products)
-        //{
-        //    this.Id = Id;
-        //    this.DateTime = DateTime;
-        //    this.Products = Products;
-        //    this.Status = Status;
-        //}
-
     }
 }

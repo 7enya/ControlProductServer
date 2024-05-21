@@ -2,8 +2,6 @@
 using System.Collections.Specialized;
 using ServerWinForm.Data;
 using ServerWinForm.Enums;
-using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace ServerWinForm.Services
 {
@@ -52,27 +50,6 @@ namespace ServerWinForm.Services
                     }
                 }
             }
-            //foreach (var profile in profiles)
-            //{
-            //    Debug.WriteLine($"deviceName = {profile.deviceName}");
-            //    Debug.WriteLine($"macAddress = {profile.deviceMacAddress}");
-            //    Debug.WriteLine($"deviceType = {profile.deviceType}");
-            //    Debug.WriteLine($"login = {profile.login}");
-            //    Debug.WriteLine($"password = {profile.password}");
-            //}
-        }
-
-        private static ImmutableHashSet<string> GetDeviceTypeList(NameValueCollection configKeys)
-        {
-            if (configKeys.Count != 0)
-                return ImmutableHashSet<string>.Empty;
-            ImmutableHashSet<string> set = ImmutableHashSet<string>.Empty;
-            foreach (var key in configKeys.AllKeys)
-            {
-                if (key!.Contains("DeviceType", StringComparison.OrdinalIgnoreCase))
-                { set.Add(configKeys[key]!); }
-            }
-            return set;
         }
     }
 }
