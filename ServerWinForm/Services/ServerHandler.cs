@@ -4,6 +4,7 @@ using ServerWinForm.Extensions;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
@@ -38,6 +39,7 @@ namespace ServerWinForm.Services
             server = new TcpListener(ipAddress!, 11000);
             server.Start();
             Debug.WriteLine($"Сервер прослушивает подключения на {server.LocalEndpoint}");
+            LogService.Write(NLog.LogLevel.Info, $"Сервер прослушивает подключения на {server.LocalEndpoint}");
             Task.Run(async () =>
             {
                 var isUploaded = await UploadProposalsFromServer();
@@ -59,6 +61,7 @@ namespace ServerWinForm.Services
         private static async Task HandleIncomingConnection(TcpClient tcpClient)
         {
             Debug.WriteLine($"Подключение устройства с адресом {tcpClient.Client.RemoteEndPoint} ...");
+            LogService.Write(NLog.LogLevel.Info, $"Подключение устройства с адресом {tcpClient.Client.RemoteEndPoint} ...");
             Device? device = null;
             try
             {
@@ -68,11 +71,13 @@ namespace ServerWinForm.Services
                 {
                     await tcpClient.GetStream().WriteMessageAsync(MessageCode.ACCESS_DENIED, null);
                     Debug.WriteLine($"Устройство {tcpClient.Client.RemoteEndPoint} не прошло процесс авторизации, соединение прервано");
+                    LogService.Write(NLog.LogLevel.Info, $"Устройство {tcpClient.Client.RemoteEndPoint} не прошло процесс авторизации, соединение прервано");
                     tcpClient.Close();
                     authSem.Release();
                     return;
                 }
                 Debug.WriteLine($"Устройство {device.ClientProfile.deviceName} ({tcpClient.Client.RemoteEndPoint}) подключено");
+                LogService.Write(NLog.LogLevel.Info, $"Устройство {device.ClientProfile.deviceName} ({tcpClient.Client.RemoteEndPoint}) подключено");
                 connectedDevices.Add(device);
                 authSem.Release();
                 await device.NetworkStream.WriteMessageAsync(MessageCode.ACCESS_GRANTED, configService.ServerAddress);
@@ -82,6 +87,7 @@ namespace ServerWinForm.Services
                     await Task.Delay(500);
                 }
                 Debug.WriteLine($"(GOOD) Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
+                LogService.Write(NLog.LogLevel.Info, $"(GOOD) Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
             }
             catch (IOException)
             {
