@@ -153,7 +153,7 @@ namespace ServerWinForm
                                     Device device;
                                     if (e.OldItems != null && e.OldItems[0] != null)
                                     {
-                                        Debug.WriteLine($"Connected Devices -> {ServerHandler.connectedDevices.Count}");
+                                        //Debug.WriteLine($"Connected Devices -> {ServerHandler.connectedDevices.Count}");
                                         lock (ServerHandler._lockDeviceObject)
                                         {
                                             device = ServerHandler.connectedDevices.FirstOrDefault(item => item.AttachedProposal == e.OldItems[0] as Proposal, null);

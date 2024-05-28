@@ -79,6 +79,8 @@ namespace ServerWinForm
                 return;
             btn_uploadProposal.Enabled = false;
             btn_uploadProposal.Visible = false;
+            btn_ok.Enabled = false;
+            btn_ok.Visible = false;
             im_UploadStatus.Visible = true;
             im_UploadStatus.Image = Resources.gif_uploadProcess;
             //await Task.Delay(3000);
@@ -97,6 +99,8 @@ namespace ServerWinForm
                 btn_uploadProposal.Visible = true;
                 im_UploadStatus.Visible = false;
             }
+            btn_ok.Enabled = true;
+            btn_ok.Visible = true;
         }
 
         private void btn_ok_Click(object sender, EventArgs e)

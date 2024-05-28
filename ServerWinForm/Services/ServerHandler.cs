@@ -81,25 +81,28 @@ namespace ServerWinForm.Services
                 authSem.Release();
                 await device.NetworkStream.WriteMessageAsync(MessageCode.ACCESS_GRANTED, configService.ServerAddress);
                 while (device.isConnected()) {
-                    //Debug.WriteLine($"Устройство {tcpClient.Client.RemoteEndPoint} подключено");
                     await device.DoJobIfThereIs(); 
                     await Task.Delay(500);
                 }
-                Debug.WriteLine($"(GOOD) Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
-                LogService.Write(NLog.LogLevel.Info, $"(GOOD) Устройство с адресом {device.TcpClient.Client.RemoteEndPoint} прекратило соединение");
+                Debug.WriteLine($"(GOOD) Устройство {device.ClientProfile.deviceName} ({device.TcpClient.Client.RemoteEndPoint}) прекратило соединение");
+                LogService.Write(NLog.LogLevel.Info, $"(GOOD) Устройство {device.ClientProfile.deviceName} ({device.TcpClient.Client.RemoteEndPoint}) прекратило соединение");
             }
             catch (IOException)
             {
-                Debug.WriteLine($"(BAD) Потеряно соединение с устройством {tcpClient.Client.RemoteEndPoint}");
+                Debug.WriteLine($"(BAD) Потеряно соединение с устройством {tcpClient.Client.RemoteEndPoint}" + device == null ? "" : $"({device!.ClientProfile.deviceName})");
+                LogService.Write(NLog.LogLevel.Warn, $"(BAD) Потеряно соединение с устройством {tcpClient.Client.RemoteEndPoint}" + device == null ? "" : $"({device!.ClientProfile.deviceName})");
             }
 
             catch (SocketException)
             {
-                Debug.WriteLine($"(BAD) Устройство с адресом {tcpClient.Client.RemoteEndPoint} отключено");
+                Debug.WriteLine($"(BAD) Устройство с адресом {tcpClient.Client.RemoteEndPoint}" + device == null ? "" : $"({device!.ClientProfile.deviceName})" + " отключено");
+                LogService.Write(NLog.LogLevel.Warn, $"(BAD) Устройство с адресом {tcpClient.Client.RemoteEndPoint}" + device == null ? "" : $"({device!.ClientProfile.deviceName})" + " отключено");
             }
             catch (FormatException)
             {
                 Debug.WriteLine($"({tcpClient.Client.RemoteEndPoint}) Получено сообщение с неверным форматом данных");
+                LogService.Write(NLog.LogLevel.Warn, $"({tcpClient.Client.RemoteEndPoint}) Получено сообщение с неверным форматом данных");
+
             }
             finally
             {
@@ -122,6 +125,7 @@ namespace ServerWinForm.Services
         private static async Task<Device?> getAuthorizedDeviceAsync(TcpClient tcpClient)
         {
             Debug.WriteLine($"Начат процесс авторизации устройства {tcpClient.Client.RemoteEndPoint}");
+            LogService.Write(NLog.LogLevel.Info, $"Начат процесс авторизации устройства {tcpClient.Client.RemoteEndPoint}");
             TimeSpan timeOut = TimeSpan.FromSeconds(10);
             var timeoutTask = Task.Delay(timeOut);
             Task<byte[]>? readMessageTask;
@@ -142,7 +146,8 @@ namespace ServerWinForm.Services
             }
             if (completedTask == timeoutTask)
             {
-                Debug.WriteLine($"(Сервер <- {tcpClient.Client.RemoteEndPoint}) Превышено время ожидания ({timeOut.Seconds} сек.)");
+                Debug.WriteLine($"({tcpClient.Client.RemoteEndPoint}) Превышено время ожидания данных для авторизации ({timeOut.Seconds} сек.)");
+                LogService.Write(NLog.LogLevel.Info, $"({tcpClient.Client.RemoteEndPoint}) Превышено время ожидания данных для авторизации ({timeOut.Seconds} сек.)");
                 return null;
             }
             var messageCode = readMessageTask.Result[0];
@@ -178,11 +183,13 @@ namespace ServerWinForm.Services
                     proposalId = splitedMes[3];
                 }
             }
-            if (userProfile == null) return null;
+            if (userProfile == null) 
+                return null;
             bool profileIsBusy = connectedDevices.Any(device => userProfile?.deviceName == device.ClientProfile.deviceName);
             if (profileIsBusy)
             {
-                Debug.WriteLine($"({tcpClient.Client.RemoteEndPoint}) Профиль устройства \"{userProfile?.deviceName}\" занят другим пользователем");
+                Debug.WriteLine($"Устройству {tcpClient.Client.RemoteEndPoint} не удалось пройти авторизацию. Профиль устройства \"{userProfile?.deviceName}\" занят другим пользователем");
+                LogService.Write(NLog.LogLevel.Info, $"Устройству {tcpClient.Client.RemoteEndPoint} не удалось пройти авторизацию. Профиль устройства \"{userProfile?.deviceName}\" занят другим пользователем");
                 return null;
             }
             var device = new Device(tcpClient, userProfile);
@@ -201,7 +208,8 @@ namespace ServerWinForm.Services
 
         public static async Task<bool> UploadProposalsFromServer()
         {
-            Debug.WriteLine("Загружаются заявки с сервера");
+            Debug.WriteLine("Попытка загрузки заявок с сервера...");
+            LogService.Write(NLog.LogLevel.Info, "Попытка загрузки заявок с сервера...");
             var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)!.Parent!.Parent!.FullName;
             //var proposalCache = @$"{projectDirectory}\cache\Proposals.txt";
             //if (!File.Exists(proposalCache))
@@ -236,6 +244,8 @@ namespace ServerWinForm.Services
             //return false;
 
             if (SERVER_ADDRESS == null) {
+                Debug.WriteLine("Не удалось получить IP-адрес сервера для подключения");
+                LogService.Write(NLog.LogLevel.Warn, "Не удалось получить IP-адрес сервера для подключения");
                 return false; 
             }
             using HttpClient httpClient = new HttpClient();
@@ -245,12 +255,16 @@ namespace ServerWinForm.Services
                 using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
                 if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound)
                 {
+                    Debug.WriteLine($"Не удалось отправить запрос на сервер (Код ответа: {response.StatusCode})");
+                    LogService.Write(NLog.LogLevel.Warn, $"Не удалось отправить запрос на сервер (Код ответа: {response.StatusCode})");
                     return false;
                 }
                 var stream = await response.Content.ReadAsStreamAsync();
                 var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
                 if (proposalsFromServer == null)
                 {
+                    Debug.WriteLine($"Получен пустой список заявок от сервера");
+                    LogService.Write(NLog.LogLevel.Warn, $"Получен пустой список заявок от сервера");
                     return false;
                 }
                 Proposal? localProposal;
@@ -264,12 +278,14 @@ namespace ServerWinForm.Services
                     }
                     else proposalList.Add(prop);
                 }
-                Debug.WriteLine("Заявки загружены с сервера");
+                Debug.WriteLine("Список заявок успешно загружен");
+                LogService.Write(NLog.LogLevel.Info, "Список заявок успешно загружен");
                 return true;
             }
             catch (HttpRequestException) 
             {
                 Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
+                LogService.Write(NLog.LogLevel.Warn, $"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
                 return false;
             }
         }
@@ -281,42 +297,65 @@ namespace ServerWinForm.Services
                 Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
             };
             var jsonfile = JsonSerializer.Serialize(proposal, options);
+            Debug.WriteLine($"({device.ClientProfile.deviceName}) Началась отправка заявки #{proposal.Id}");
+            LogService.Write(NLog.LogLevel.Info, $"({device.ClientProfile.deviceName}) Началась отправка заявки #{proposal.Id}");
             try
             {
-                Debug.WriteLine($"(Server -> {device.TcpClient.Client.RemoteEndPoint}) Началась отправка заявки");
-                var isSent = await device.NetworkStream.WriteMessageAsync(MessageCode.SEND_PROPOSAL, jsonfile);
-                Debug.WriteLine($"(Server -> {device.TcpClient.Client.RemoteEndPoint}) Заявка отправлена");
-                var response = await device.NetworkStream.ReadMessageAsync();
-                if (response[0] == (byte)MessageCode.PROPOSAL_ACCEPTED)
-                {
-                    device.AttachedProposal = proposal;
-                    proposal.Status = ProposalStatus.IN_PROCESS;
-                    int index = proposalList.IndexOf(proposal);
-                    proposalList[index] = proposal;
-                    device.job = StartWaitingForResultOfProposalProcessing;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                await device.NetworkStream.WriteMessageAsync(MessageCode.SEND_PROPOSAL, jsonfile);
             }
-            catch (IOException) 
-            { 
-                Debug.WriteLine("Возникло исключение"); 
+            catch (IOException)
+            {
+                Debug.WriteLine($"({device.ClientProfile.deviceName}) Возникла ошибка при отправке заявки #{proposal.Id}");
+                LogService.Write(NLog.LogLevel.Warn, $"({device.ClientProfile.deviceName}) Возникла ошибка при отправке заявки #{proposal.Id}");
+                return false;
+            }
+            catch (SocketException) 
+            {
+                LogService.Write(NLog.LogLevel.Warn, $"Потеряно соединение с устройством {device.ClientProfile.deviceName} ({device.TcpClient.Client.RemoteEndPoint})");
                 return false; 
             }
-            catch (SocketException) { return false; }
+            Debug.WriteLine($"({device.ClientProfile.deviceName}) Заявка #{proposal.Id} отправлена");
+            LogService.Write(NLog.LogLevel.Info, $"({device.TcpClient.Client.RemoteEndPoint}) Заявка #{proposal.Id} отправлена");
+            byte[] response;
+            try
+            {
+                response = await device.NetworkStream.ReadMessageAsync();
+            }
+            catch (IOException)
+            {
+                Debug.WriteLine($"({device.ClientProfile.deviceName}) Возникла ошибка при получении ответа");
+                LogService.Write(NLog.LogLevel.Warn, $"({device.ClientProfile.deviceName}) Возникла ошибка при получении ответа");
+                return false;
+            }
+            catch (SocketException)
+            {
+                LogService.Write(NLog.LogLevel.Warn, $"Потеряно соединение с устройством {device.ClientProfile.deviceName} ({device.TcpClient.Client.RemoteEndPoint})");
+                return false;
+            }
+            if (response[0] == (byte)MessageCode.PROPOSAL_ACCEPTED)
+            {
+                device.AttachedProposal = proposal;
+                proposal.Status = ProposalStatus.IN_PROCESS;
+                int index = proposalList.IndexOf(proposal);
+                proposalList[index] = proposal;
+                device.job = StartWaitingForResultOfProposalProcessing;
+                return true;
+            }
+            else
+                return false;
         }
 
         private static async Task StartWaitingForResultOfProposalProcessing(Device device)
         {
-            Debug.WriteLine("Жду сообщения о заявке");
+            Debug.WriteLine($"({device.ClientProfile.deviceName}) Ожидание результата обработки заявки #{device.AttachedProposal.Id}");
+            LogService.Write(NLog.LogLevel.Info, $"({device.ClientProfile.deviceName}) Ожидание результата обработки заявки #{device.AttachedProposal.Id}");
             var response = await device.NetworkStream.ReadMessageAsync();
             switch ((MessageCode)response[0])
             {
                 case MessageCode.JOB_DONE:
                     {
+                        Debug.WriteLine($"({device.ClientProfile.deviceName}) Заявка #{device.AttachedProposal.Id} обработана");
+                        LogService.Write(NLog.LogLevel.Info, $"({device.ClientProfile.deviceName}) Заявка #{device.AttachedProposal.Id} обработана");
                         var proposal = device.AttachedProposal;
                         device.AttachedProposal = null;
                         proposal!.Status = ProposalStatus.PROCESSED;
@@ -327,6 +366,8 @@ namespace ServerWinForm.Services
                     }
                 case MessageCode.PROPOSAL_REJECTED:
                     {
+                        Debug.WriteLine($"({device.ClientProfile.deviceName}) Отмена обработки заявки #{device.AttachedProposal.Id}");
+                        LogService.Write(NLog.LogLevel.Info, $"({device.ClientProfile.deviceName}) Отмена обработки заявки #{device.AttachedProposal.Id}");
                         var proposal = device.AttachedProposal;
                         device.AttachedProposal = null;
                         proposal!.Status = ProposalStatus.UNPROCESSED;
