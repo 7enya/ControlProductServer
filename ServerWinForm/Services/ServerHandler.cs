@@ -261,7 +261,7 @@ namespace ServerWinForm.Services
                 }
                 var stream = await response.Content.ReadAsStreamAsync();
                 var proposalsFromServer = JsonSerializer.Deserialize<List<Proposal>>(stream);
-                if (proposalsFromServer == null)
+                if (proposalsFromServer == null || proposalsFromServer.Count == 0)
                 {
                     Debug.WriteLine($"Получен пустой список заявок от сервера");
                     LogService.Write(NLog.LogLevel.Warn, $"Получен пустой список заявок от сервера");
@@ -274,7 +274,10 @@ namespace ServerWinForm.Services
                     if (localProposal != null)
                     {
                         if (localProposal.Status != ProposalStatus.IN_PROCESS)
+                        {
                             localProposal.Status = prop.Status;
+                            proposalList.Insert(proposalList.IndexOf(localProposal), localProposal);
+                        }
                     }
                     else proposalList.Add(prop);
                 }
@@ -361,6 +364,7 @@ namespace ServerWinForm.Services
                         proposal!.Status = ProposalStatus.PROCESSED;
                         var index = proposalList.IndexOf(proposal);
                         proposalList[index] = proposal;
+                        device.job = null;
 
                         break;
                     }
