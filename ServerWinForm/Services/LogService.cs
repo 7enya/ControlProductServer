@@ -14,7 +14,7 @@ namespace ServerWinForm.Services
         private static Semaphore writeSem = new Semaphore(1, 1);
         private static Logger logger { get; set; }
 
-        static LogService()
+        public static void Initialize()
         {
             var target = new FileTarget();
             target.FileName = "${basedir}/logs/${shortdate}.log";
@@ -32,12 +32,12 @@ namespace ServerWinForm.Services
             logger = LogManager.GetCurrentClassLogger();
         }
 
-            public static void Write(LogLevel logLevel, string message) 
-            {
-                writeSem.WaitOne();
-                logger.Log(logLevel, message);
-                writeSem.Release();
-            }
+        public static void Write(LogLevel logLevel, string message) 
+        {
+            writeSem.WaitOne();
+            logger.Log(logLevel, message);
+            writeSem.Release();
+        }
         
     }
 }

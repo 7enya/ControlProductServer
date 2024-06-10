@@ -39,11 +39,9 @@ namespace ServerWinForm.Services
             server.Start();
             Debug.WriteLine($"Сервер прослушивает подключения на {server.LocalEndpoint}");
             LogService.Write(NLog.LogLevel.Info, $"Сервер прослушивает подключения на {server.LocalEndpoint}");
-            Task.Run(async () =>
-            {
-                var isUploaded = await UploadProposalsFromServer();
-                if (!isUploaded) UpdateProposalsFail();
-            });
+            var isUploaded = await UploadProposalsFromServer();
+            if (!isUploaded) 
+                UpdateProposalsFail();
             while (true)
             {
                 if (server.Pending())
@@ -119,6 +117,7 @@ namespace ServerWinForm.Services
                     }
                     Debug.WriteLine($"Удалено устройство {device.ClientProfile.deviceName} из списка (Size: {connectedDevices.Count})");
                 }
+                tcpClient.Close();
             }
         }
 
@@ -196,7 +195,7 @@ namespace ServerWinForm.Services
             if (proposalId != string.Empty)
             {
                 var proposal = proposalList.FirstOrDefault(prop => prop!.Id == proposalId, null);
-                if (proposal != null) 
+                if (proposal != null && proposal.Status == ProposalStatus.UNPROCESSED) 
                 {
                     device.AttachedProposal = proposal;
                     device.job = StartWaitingForResultOfProposalProcessing;
@@ -290,6 +289,12 @@ namespace ServerWinForm.Services
                 return true;
             }
             catch (HttpRequestException)
+            {
+                Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
+                LogService.Write(NLog.LogLevel.Warn, $"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
+                return false;
+            }
+            catch (TaskCanceledException) 
             {
                 Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
                 LogService.Write(NLog.LogLevel.Warn, $"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
