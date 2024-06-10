@@ -237,16 +237,20 @@ namespace ServerWinForm.Services
             //            if (localProposal.Status != ProposalStatus.IN_PROCESS)
             //                localProposal.Status = prop.Status;
             //        }
-            //        else proposalList.Add(prop);
+            //        else
+            //        {
+            //            proposalList.Add(prop);
+            //        }
             //    }
             //    return true;
-            //}
+            //} 
             //return false;
 
-            if (SERVER_ADDRESS == null) {
+            if (SERVER_ADDRESS == null)
+            {
                 Debug.WriteLine("Не удалось получить IP-адрес сервера для подключения");
                 LogService.Write(NLog.LogLevel.Warn, "Не удалось получить IP-адрес сервера для подключения");
-                return false; 
+                return false;
             }
             using HttpClient httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(5);
@@ -285,7 +289,7 @@ namespace ServerWinForm.Services
                 LogService.Write(NLog.LogLevel.Info, "Список заявок успешно загружен");
                 return true;
             }
-            catch (HttpRequestException) 
+            catch (HttpRequestException)
             {
                 Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
                 LogService.Write(NLog.LogLevel.Warn, $"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
