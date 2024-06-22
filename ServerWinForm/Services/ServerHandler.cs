@@ -131,7 +131,7 @@ namespace ServerWinForm.Services
             Task? completedTask;
             try
             {
-                readMessageTask = tcpClient.GetStream().ReadMessageAsync();
+                readMessageTask = tcpClient.GetStream().ReadMessageAsync(tcpClient);
                 completedTask = await Task.WhenAny(timeoutTask, readMessageTask);
             }
             catch (FormatException)
@@ -242,7 +242,7 @@ namespace ServerWinForm.Services
             //        }
             //    }
             //    return true;
-            //} 
+            //}
             //return false;
 
             if (SERVER_ADDRESS == null)
@@ -252,7 +252,7 @@ namespace ServerWinForm.Services
                 return false;
             }
             using HttpClient httpClient = new HttpClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(5);
+            httpClient.Timeout = TimeSpan.FromSeconds(7);
             try
             {
                 using var response = await httpClient.GetAsync(SERVER_ADDRESS + "/application/all");
@@ -273,13 +273,15 @@ namespace ServerWinForm.Services
                 Proposal? localProposal;
                 foreach (Proposal prop in proposalsFromServer)
                 {
+                    int index;
                     localProposal = proposalList.FirstOrDefault((pr) => prop.Id == pr.Id, null);
                     if (localProposal != null)
                     {
                         if (localProposal.Status != ProposalStatus.IN_PROCESS)
                         {
                             localProposal.Status = prop.Status;
-                            proposalList.Insert(proposalList.IndexOf(localProposal), localProposal);
+                            index = proposalList.IndexOf(localProposal);
+                            proposalList[index] = localProposal;
                         }
                     }
                     else proposalList.Add(prop);
@@ -294,7 +296,7 @@ namespace ServerWinForm.Services
                 LogService.Write(NLog.LogLevel.Warn, $"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
                 return false;
             }
-            catch (TaskCanceledException) 
+            catch (TaskCanceledException)
             {
                 Debug.WriteLine($"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
                 LogService.Write(NLog.LogLevel.Warn, $"Не удалось подключиться к серверу по адресу {SERVER_ADDRESS}");
@@ -331,7 +333,7 @@ namespace ServerWinForm.Services
             byte[] response;
             try
             {
-                response = await device.NetworkStream.ReadMessageAsync();
+                response = await device.NetworkStream.ReadMessageAsync(device.TcpClient);
             }
             catch (IOException)
             {
@@ -361,7 +363,7 @@ namespace ServerWinForm.Services
         {
             Debug.WriteLine($"({device.ClientProfile.deviceName}) Ожидание результата обработки заявки #{device.AttachedProposal.Id}");
             LogService.Write(NLog.LogLevel.Info, $"({device.ClientProfile.deviceName}) Ожидание результата обработки заявки #{device.AttachedProposal.Id}");
-            var response = await device.NetworkStream.ReadMessageAsync();
+            var response = await device.NetworkStream.ReadMessageAsync(device.TcpClient);
             switch ((MessageCode)response[0])
             {
                 case MessageCode.JOB_DONE:

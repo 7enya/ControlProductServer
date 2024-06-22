@@ -13,7 +13,7 @@ namespace ServerWinForm.Extensions
 
         public static async Task<bool> WriteMessageAsync(this NetworkStream stream, MessageCode code, string? message)
         {
-            byte[] buffer; 
+            byte[] buffer;
             if (message != null)
             {
                 if (message.Length > MAX_MESSAGE_SYMB_SIZE)
@@ -26,7 +26,7 @@ namespace ServerWinForm.Extensions
                     return false;
                 }
                 buffer = new byte[BYTES_FOR_MESSAGE_LENGTH + 1 + messageAsBytes.Length];
-                var messageLengthAsBytes = BitConverter.GetBytes( (short)(1 + messageAsBytes.Length));
+                var messageLengthAsBytes = BitConverter.GetBytes((short)(1 + messageAsBytes.Length));
                 messageLengthAsBytes.CopyTo(buffer, 0);
                 buffer[BYTES_FOR_MESSAGE_LENGTH] = (byte)code;
                 messageAsBytes.CopyTo(buffer, BYTES_FOR_MESSAGE_LENGTH + 1);
@@ -48,15 +48,69 @@ namespace ServerWinForm.Extensions
             }
         }
 
-        public static async Task<byte[]> ReadMessageAsync(this NetworkStream stream)
+        public static async Task<byte[]> ReadMessageAsync(this NetworkStream stream, TcpClient client)
         {
+            //CancellationTokenSource tokenSource = new CancellationTokenSource();
+            //CancellationToken token = new CancellationToken();
             var messageLengthAsBytes = new byte[BYTES_FOR_MESSAGE_LENGTH];
             var readBytes = 0;
+            //Task<int>? readMessageTask;
+            //Task? completedTask;
+
+            //while (readBytes != BYTES_FOR_MESSAGE_LENGTH)
+            //{
+
+
+            //    Debug.WriteLine($"Readed bytes = {readBytes}");
+            //    readMessageTask = stream.ReadAsync(messageLengthAsBytes, readBytes, messageLengthAsBytes.Length, token);
+            //    TimeSpan timeOut = TimeSpan.FromSeconds(7);
+            //    var timeoutTask = Task.Delay(timeOut);
+            //    completedTask = await Task.WhenAny(timeoutTask, readMessageTask);
+            //    //readBytes += await stream.ReadAsync(messageLengthAsBytes, readBytes, messageLengthAsBytes.Length);
+            //    if (completedTask == timeoutTask)
+            //    {
+            //        tokenSource.Cancel();
+            //        try
+            //        {
+            //            stream.WriteByte(1);
+            //        }
+            //        catch (IOException)
+            //        {
+            //            throw new SocketException();
+            //        }
+            //        tokenSource.Dispose();
+            //        tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            //        Debug.WriteLine("СНОВА ЖДУ СООБЩЕНИЯ");
+            //        continue;
+            //        //if (stream.Wr)
+            //        //{
+            //        //    tokenSource.Dispose();
+            //        //    tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            //        //    Debug.WriteLine("СНОВА ЖДУ СООБЩЕНИЯ");
+            //        //    continue;
+            //        //}
+            //        //else throw new SocketException();
+            //    }
+            //    else
+            //    {
+            //        Debug.WriteLine("УСПЕЛ ПРОЧИТАТЬ");
+            //        readBytes += readMessageTask.Result;
+            //        if (readBytes == 0)
+            //        {
+            //            Debug.WriteLine("НУ ПИЗДЕЦ");
+            //            throw new SocketException();
+            //        }
+            //    }
+            //}
+
             while (readBytes != BYTES_FOR_MESSAGE_LENGTH)
             {
                 readBytes += await stream.ReadAsync(messageLengthAsBytes, readBytes, messageLengthAsBytes.Length);
                 if (readBytes == 0)
+                {
+                    Debug.WriteLine("НУ ПИЗДЕЦ");
                     throw new SocketException();
+                }
             }
             Debug.Write("\nMessage length (bytes) -> ");
             foreach (byte b in messageLengthAsBytes)
@@ -80,7 +134,7 @@ namespace ServerWinForm.Extensions
                 else
                     Debug.WriteLine($"Accepted package -> length: {message.Length}, code: {(MessageCode)message[0]}, message: {Encoding.UTF8.GetString(message, 1, message.Length - 1)}");
                 return message;
-            } 
+            }
             catch (ArgumentOutOfRangeException)
             {
                 throw new FormatException();
@@ -90,7 +144,7 @@ namespace ServerWinForm.Extensions
         public static async Task ClearStreamAsync(this NetworkStream stream)
         {
             byte[] buffer = new byte[100];
-            while ((await stream.ReadAsync(buffer, 0, buffer.Length)) != 0);
+            while ((await stream.ReadAsync(buffer, 0, buffer.Length)) != 0) ;
         }
     }
 }
